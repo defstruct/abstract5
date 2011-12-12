@@ -1,0 +1,65 @@
+* Process order
+** Instrall
+** Configuration
+** Run
+
+* Exec order
+** Get view, model, controller
+** View has theme, page
+** 1. Get 'theme' for the requested page
+** 2. Get 'page-type' for the requested page
+** 3. If page-type found, use it. Otherwise use 'default' definition
+** 4. For single-page, use single-page.html(view.php)
+
+* Config screen
+** timezone, localisation, etc
+
+* Startup
+** Config file loading
+** Database init, health check
+
+* A page = collection of blocks, ..., etc
+
+* Area = block container
+
+;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+* URIs - RESTful
+
+					GET		PUT		POST		DELETE
+Collection URI, such as
+http://example.com/resources/		List		Replace		Create		Delete
+
+Element URI, such as
+http://example.com/resources/item17	Retrieve	Replace/Create	Create sub	Delete
+
+
+
+* URI mappings
+
+** Subdomain
+   sub1.example.com/blog/ -> by proxy, change it to subdirectory
+
+** Subdirectory
+   example.com/sub1/blog/
+
+
+* Startup
+
+** For first startup(webserver+ex-press) goto (admin?) xp-config screen and populate DB, etc
+** Init DB, check its health
+
+
+* Plugin
+** Status - unloaded, activated, inactive
+** Operations - Load, activate, deactivate
+(define-plugin :hello-dolly
+    :name "Hello Dolly"
+    :uri "http://wordpress.org/extend/plugins/hello-dolly/"
+    :description "This is not just a plugin, it symbolizes the hope and enthusiasm of an entire generation summed up in two words sung most famously by Louis Armstrong: Hello, Dolly. When activated you will randomly see a lyric from <cite>Hello, Dolly</cite> in the upper right of your admin screen on every page."
+    :author "J. C."
+    :author-uri ""
+    :version "1.0"
+    :hook dolly-css)
+** :HOOK, if it is called with an arg, filter otherwise action
