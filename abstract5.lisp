@@ -30,6 +30,9 @@
 (defun handler ()
   ;; check maintenance?
   ;; ...
-  )
+  (multiple-value-bind (model view controller)
+      ;; FIXME:
+      (get-mvc-from-uri FIXME)
+    (render-html view (get-view-environment controller))))
 
 ;;; ABSTRACT5.LISP ends here

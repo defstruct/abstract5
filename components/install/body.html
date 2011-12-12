@@ -1,0 +1,62 @@
+    <div id='ccm-logo'><img src='<!-- TMPL_VAR logo-menu.png -->' width='49' height='49' alt='Abstract CMS' /></div>
+    <div id='ccm-theme-wrapper'>
+      <!-- TMPL_IF system-errors -->
+      <ul class="ccm-error">
+	<!-- TMPL_LOOP system-errors -->
+	<li><!-- TMPL_VAR error-message --></li>
+	<!-- /TMPL_LOOP -->
+      </ul>
+      <!-- /TMPL_IF -->
+
+      <!-- TMPL_IF install-success-p -->
+      <h1>Install abstract5</h1>
+      <div class="ccm-form">
+	Congratulations. abstract5 has been installed. You have been logged in as
+	<b><!-- TMPL_VAR super-user --></b> with the password <b><!-- TMPL_VAR password --></b>.
+	<br/><br/>If you wish to change this password, you may do so from the users area of the dashboard.
+	<br/><br/>
+	<a href='/'>Continue to your site. &gt;</a>
+      </div>
+
+      <!-- TMPL_ELSE -->
+      <div id='ccm-install-intro'>
+	<h1>Install abstract5</h1>
+      </div>
+
+      <div id='ccm-install-form' class='ccm-form'>
+	<form action='/index.php/install/-/configure/' method='post'>
+	  <h2>Personal Information</h2>
+	  <label for='SITE'>Name Your Site:</label><br/>
+	  <input id='SITE' type='text' name='SITE' class='ccm-input-text' />
+	  <br/><br/>
+	  <label for='uEmail'>Your Email Address</label><br/>
+	  <input id='uEmail' type='text' name='uEmail' class='ccm-input-text' />
+	  <br/><br/>
+
+	  <h2>Database Information</h2>
+
+	  <label for='DB_SERVER'>Server</label><br/>
+	  <input id='DB_SERVER' type='text' name='DB_SERVER' class='ccm-input-text' />	<br/><br/>
+
+	  <label for='DB_USERNAME'>MySQL Username</label><br/>
+	  <input id='DB_USERNAME' type='text' name='DB_USERNAME' class='ccm-input-text' />	<br/><br/>
+
+	  <label for='DB_PASSWORD'>MySQL Password</label><br/>
+	  <input id='DB_PASSWORD' type='text' name='DB_PASSWORD' class='ccm-input-text' />	<br/><br/>
+
+	  <label for='DB_DATABASE'>Database Name</label><br/>
+	  <input id='DB_DATABASE' type='text' name='DB_DATABASE' class='ccm-input-text' />	<br/><br/>
+
+	  <h2>Sample Content</h2>
+
+	  <input type='checkbox'  class='ccm-input-checkbox' name='INSTALL_SAMPLE_CONTENT' id='INSTALL_SAMPLE_CONTENT' value='1' checked='checked'  />	<label for='INSTALL_SAMPLE_CONTENT'>Install sample content</label><br/>
+	  <br/>
+
+	  <div class='ccm-button'>
+	    <input type='submit' class='ccm-input-submit' id='submit' name='submit' value='Install abstract5 &gt;' />	</div>
+	  <br/><br/>
+
+	</form>
+      </div>
+      <!-- /TMPL_IF -->
+    </div>

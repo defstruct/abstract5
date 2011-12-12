@@ -1,3 +1,34 @@
+    <!-- TMPL_LOOP theme-css-files -->
+    <link rel='stylesheet' media='screen' type='text/css' href='<!-- TMPL_VAR css-file -->' />
+    <!-- /TMPL_LOOP -->
+    <!-- TMPL_LOOP theme-js-files -->
+    <script type='text/javascript' src='<!-- TMPL_VAR js-file -->'></script>
+    <!-- /TMPL_LOOP -->
+
+    <!-- TMPL_CALL html-header -->
+
+    <!-- FIXME: html-header may have -
+	 <meta http-equiv="content-type" content="text/html; charset=<?php  echo APP_CHARSET?>" />
+	 meta title
+	 meta description
+	 meta keywords
+	 meta robots
+	 meta generator
+
+	 title
+
+	 inline js
+
+	 FAVICON:
+	 link rel='shorcut icon'
+	 link rel='icon'
+
+	 more javascripts - check concrete5 pages (see header_required.php)
+
+	 -->
+
+
+
 * Process order
 ** Instrall
 ** Configuration
