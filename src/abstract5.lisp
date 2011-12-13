@@ -18,6 +18,13 @@
   "$Id$
    Report bugs to: jongwon.choi@internode.on.net")
 
+;;;
+;;; Server start
+;;;
+(defun start-abstract5 ()
+  (let ((hunchentoot:*dispatch-table*
+  )
+
 (defun main ()
   ;; check config file. Load it or start installation web page
   ;; DB(?) when?

@@ -18,12 +18,32 @@
   "$Id$
    Report bugs to: jongwon.choi@internode.on.net")
 
-;; CONTROLLER Generic Functions
+;; FIXME: move to proper place
+(defun get-site-html-lang ()
+  "en")
+
+(defun get-global-environment ()
+  `(:html-lang ,(get-site-html-lang)))
+
+;;;
+;;; CONTROLLER Class and Generic Functions
+;;;
+(defclass controller ()
+  ())
+
 (defgeneric get-view-environment (controller)
   (:documentation
-   "Return an environment of key value pairs as in HTML-TEMPLATE library."))
+   "Return an environment of key value pairs as in HTML-TEMPLATE library.")
+  (:method append ((controller controller))
+	   (get-global-environment))
+  (:method-combination append))
 
-;; VIEW Generic Functions
+;;;
+;;; VIEW Class and Generic Functions
+;;;
+(defclass view ()
+  ())
+
 (defgeneric render-html (view env)
   (:documentation
    "Render HTML file for the given VIEW using ENV context. ENV is usable key value pairs in HTML-TEMPLATE library."))
