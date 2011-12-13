@@ -1,11 +1,50 @@
-* URI -
-  /subdomain/component,  /component
-  /subdomain/component?arg1=var1,  /component?arg1=var1
-  /subdomain/component
-  /install/configure
+* Admins
+  - Root admin can do editing configuration file.
+    E.g. DB configuration and multi-site configuration
+    The information stored in root.conf
+    The file is only editable on localhost with a editor
 
+  - Site admin is any site related configuration
+    The information sotred in DB.
+    Edit via web interface
 
+* URI
+  - For single pages, /single-page/operation?arg1=v1&arg2=v2, etc
+  - For DB stored pages,
+        /db/stored/long/page/operation?arg1=v1&arg2=v2
+	or
+	/db/stored/long/page/item?arg1=v1&arg2=v2
 
+* Multi-site
+  - The standard instances storage is abstract5/site-instances/
+  - The root site abstract5/site-instances/root is common shared resource for all other sites
+  - Each site has different DB schema (PostgreSQL)
+
+* Exec order
+  - Get view, model, controller
+  - View has theme, page
+  - Get 'theme' for the requested page
+  - Get 'page-type' for the requested page
+  - If page-type found, use it. Otherwise use 'default' definition
+  - For single-page, use single-page.html(view.php)
+
+* A page = collection of blocks, ..., etc
+
+* Area = block container
+
+* Plugin
+  - Status - unloaded, activated, inactive
+  - Operations - Load, activate, deactivate
+    (define-plugin :hello-dolly
+    		   :name "Hello Dolly"
+		   :uri "http://wordpress.org/extend/plugins/hello-dolly/"
+		   :description "This is not just a plugin, it symbolizes the hope and enthusiasm of an entire generation summed up in two words sung most famously by Louis Armstrong: Hello, Dolly. When activated you will randomly see a lyric from <cite>Hello, Dolly</cite> in the upper right of your admin screen on every page."
+		   :author "J. C."
+    		   :author-uri ""
+    		   :version "1.0"
+    		   :hook dolly-css)
+
+* Example HTML structure
     <!-- TMPL_LOOP theme-css-files -->
     <link rel='stylesheet' media='screen' type='text/css' href='<!-- TMPL_VAR css-file -->' />
     <!-- /TMPL_LOOP -->
@@ -34,71 +73,3 @@
 	 more javascripts - check concrete5 pages (see header_required.php)
 
 	 -->
-
-
-
-* Process order
-** Instrall
-** Configuration
-** Run
-
-* Exec order
-** Get view, model, controller
-** View has theme, page
-** 1. Get 'theme' for the requested page
-** 2. Get 'page-type' for the requested page
-** 3. If page-type found, use it. Otherwise use 'default' definition
-** 4. For single-page, use single-page.html(view.php)
-
-* Config screen
-** timezone, localisation, etc
-
-* Startup
-** Config file loading
-** Database init, health check
-
-* A page = collection of blocks, ..., etc
-
-* Area = block container
-
-;;;;;;;;;;;;;;;;;;;;;;;;
-
-
-* URIs - RESTful
-
-					GET		PUT		POST		DELETE
-Collection URI, such as
-http://example.com/resources/		List		Replace		Create		Delete
-
-Element URI, such as
-http://example.com/resources/item17	Retrieve	Replace/Create	Create sub	Delete
-
-
-
-* URI mappings
-
-** Subdomain
-   sub1.example.com/blog/ -> by proxy, change it to subdirectory
-
-** Subdirectory
-   example.com/sub1/blog/
-
-
-* Startup
-
-** For first startup(webserver+ex-press) goto (admin?) xp-config screen and populate DB, etc
-** Init DB, check its health
-
-
-* Plugin
-** Status - unloaded, activated, inactive
-** Operations - Load, activate, deactivate
-(define-plugin :hello-dolly
-    :name "Hello Dolly"
-    :uri "http://wordpress.org/extend/plugins/hello-dolly/"
-    :description "This is not just a plugin, it symbolizes the hope and enthusiasm of an entire generation summed up in two words sung most famously by Louis Armstrong: Hello, Dolly. When activated you will randomly see a lyric from <cite>Hello, Dolly</cite> in the upper right of your admin screen on every page."
-    :author "J. C."
-    :author-uri ""
-    :version "1.0"
-    :hook dolly-css)
-** :HOOK, if it is called with an arg, filter otherwise action
