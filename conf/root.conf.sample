@@ -14,10 +14,8 @@
 
 (:site (:name defstruct
 	:domains ("www.defstruct.com" "defstruct.com")
-	;; NOTE: usually no need to pass :db-schema and :folder
-	;; The values will be from site name.
-	;; E.g. :db-schema "defstruct"
-	;;	:folder "/path-to-abstract5/site-instances/defstruct"
+	;; NOTE: db-schema is "defstruct"
+	;;	 home is "/path-to-abstract5/site-instances/defstruct"
 	))
 
 (:site (:name test
