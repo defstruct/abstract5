@@ -35,6 +35,77 @@
 * Plugin
   - Status - unloaded, activated, inactive
   - Operations - Load, activate, deactivate
+
+* MVC (http://andrewembler.com/posts/basic-mvc-in-concrete5/)
+
+  - View
+    <form method="post" action="<!-- TMPL_VAR search-user -->">
+        <input type="text" name="uName" value="" />
+    	<input type="submit" value="Search" />
+    </form>
+
+  - Controller - return environment to view
+    (:search-user (make-action-uri :action :search-user))
+
+    (:second-search-user (make-action-uri :uri "/path/to/second/single/page" :action :second-search-user))
+
+  - URI and controller mapping
+       http://www.yoursite.com/index.php/calculator/
+      (define-single-page calculator ("calculator")
+	:actions ((multiply ((a number) (b number))
+			(* a b))
+		     ... more actions ...
+		     ))
+
+      (:calc-mult-5-10 (make-action-uri calculator multiply 5 10))
+
+  - View
+    <a href="<!-- TMPL_VAR calc-mult-5-10 -->">Multiply Here!</a>
+
+  - Controller and View
+    :actions ((search-user ((user-name string))
+    	         (:user-name-posted user-name)))
+
+    <!-- TMPL_VAR user-name-posted -->
+
+* Ex - http://andrewembler.com/posts/custom-concrete5-user-reports/
+;; NB: user-visited-page-list and :site are a key to map request to MVC component
+(define-mvc user-visited-page-list (:site test) ;; without :site, it is visible to all sites
+  :model ((:inherit (user-list))
+	  (:slots   (filters))
+	  (:methods ((get-page ((user-visited-page-list user-visited-page-list) filters)
+			       "return user objects"))))
+  :view ((:uri  "/user-visited-page-list") ;; will map test.domain/user-visited-page-list
+	 ;; map site-instances/test/components/user-visited-page-list.html
+	 ;; or  site-instances/root/components/user-visited-page-list.html (when no :site)
+	 (:html "component/user-visited-page-list.html")
+	 )
+  :controller ((:methods ((search-users ((controller user-visited-page-list) :page-id :dt-from :dt-to :num-results)
+			    ;; send this to view
+			    (:user-email-class ""
+			     :user-email-href ""
+			     :first-name-class ""
+			     :first-name-href ""
+			     :second-name-class ""
+			     :second-name-href ""
+			     ...
+			     :loop-result
+			     ((:user-id ""
+			       :user-id-href ""
+			       :first-name ""
+			       :last-name ""
+			       ...)
+			      (:user-id ""
+			       :user-id-href ""
+			       :first-name ""
+			       :last-name ""
+			       ...)
+			      ...)))))))
+
+
+
+
+
     (define-plugin :hello-dolly
     		   :name "Hello Dolly"
 		   :uri "http://wordpress.org/extend/plugins/hello-dolly/"
