@@ -28,12 +28,26 @@
 	 ;; or  site-instances/root/components/user-visited-page-list.html (when no :site)
 	 (:html "component/user-visited-page-list.html")
 	 )
-  :controller ((:methods ((run-operation&get-env (mvc operator (user-name :user-name))
+  :controller ((:methods ((do-login (mvc operator (user-name :user-name) (password :password))
+			    (when (banned-ip (hunchentoot:real-remote-addr))
+			      (push-mvc-error (banned-error-message)))
+			    ;; FIXME: open-id-auth
+			    (when (or (whitespace-string? user-name)
+				      (whitespace-string? password))
+			      (push-mvc-error (get-mvc-message :user-name-passowrd-required
+							       (config-param :user-registration-with-email-address))))
+			    (let ((user (find-abstract5-user user-name password)))
+			      ...
+			      ;; you're here!
+
+
+
 			    ;; FIXME: macro need to
 			    ;; - add mvc-key in argslist
 			    ;; - add with-site-db
 			    ;; - add with-site-env (for site relevant vars)
 			    ;; - add with-http-params
+			    ;; - openID stuff priority
 			    ;;
 			    ;; If there is any error, show the error later
 			    (let ((user-name-label (if (config-param :user-registration-with-email-address)

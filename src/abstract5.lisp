@@ -85,20 +85,27 @@
 ;;;
 ;;; MVC functions/generic functions
 ;;;
+;; FIXME: with-mvc-site-env bind *mvc-errors*
+(defvar *mvc-errors*) ;; used to accumulate error messages
+(defun push-mvc-error (error-message)
+  (push error-message *mvc-errors*))
+(defun get-mvc-errors ()
+  (reverse *mvc-errors*))
 
 ;; FIXME: move to proper place
 (defun get-site-html-lang ()
   "en")
 
 (defun get-global-environment ()
-  `(:html-lang ,(get-site-html-lang)))
+  `(:mvc-errors ,(get-mvc-errors)
+    :html-lang ,(get-site-html-lang)))
 
 (defgeneric run-operation&get-env (mvc-key mvc operator operands)
   (:documentation
    "Run OPERATOR with OPERANDS of given MVC-KEY and MVC then return an environment of key value pairs as in HTML-TEMPLATE library.")
   (:method append ((key t) mvc operator operands)
 	   (declare (ignore mvc operator operands operands))
-	   (get-global-environment))
+	   (append (apply operator operands) (get-global-environment)))
   (:method-combination append))
 
 (defgeneric render-view-with-env (mvc-key mvc env)
@@ -108,9 +115,9 @@
     (declare (ignore mvc-key))
     (html-template:fill-and-print-template (view-template-printer mvc) env *html-output-stream*)))
 
-
 ;;;
 ;;; with-site-db, with-site-env, with-http-params
+;;; probably locale
 ;;;
 (defvar *site-environment*) ;; used in with-site-env
 
@@ -148,7 +155,8 @@
 	  (parse-abstract5-uri domain-name (hunchentoot:request-uri request))
 	(let ((mvc-key (mvc-key mvc)))
 	  ;; render-view-with-env may have :before, :after, and :around
-	  (render-view-with-env mvc-key mvc (run-operation&get-env mvc-key mvc operator operands)))))))
+	  (with-mvc-site-env (mvc)
+	    (render-view-with-env mvc-key mvc (run-operation&get-env mvc-key mvc operator operands))))))))
 
 (defun main ()
   ;; check config file. Load it or start installation web page
