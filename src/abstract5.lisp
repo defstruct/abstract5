@@ -82,20 +82,73 @@
 	 (progn
 	   ,@body)))))
 
+;;;
+;;; MVC functions/generic functions
+;;;
+
+;; FIXME: move to proper place
+(defun get-site-html-lang ()
+  "en")
+
+(defun get-global-environment ()
+  `(:html-lang ,(get-site-html-lang)))
+
+(defgeneric run-operation&get-env (mvc-key mvc operator operands)
+  (:documentation
+   "Run OPERATOR with OPERANDS of given MVC-KEY and MVC then return an environment of key value pairs as in HTML-TEMPLATE library.")
+  (:method append ((key t) mvc operator operands)
+	   (declare (ignore mvc operator operands operands))
+	   (get-global-environment))
+  (:method-combination append))
+
+(defgeneric render-view-with-env (mvc-key mvc env)
+  (:documentation
+   "Return HTML view of MVC after applying ENV. MVC-KEY is the method specializer")
+  (:method (mvc-key mvc env)
+    (declare (ignore mvc-key))
+    (html-template:fill-and-print-template (view-template-printer mvc) env *html-output-stream*)))
 
 
+;;;
+;;; with-site-db, with-site-env, with-http-params
+;;;
+(defvar *site-environment*) ;; used in with-site-env
+
+(defun config-param (key)
+  ;; 1. first check *site-environment* (cache)
+  ;; 2. query DB (and update cache)
+  )
+
+(defun %set-config-param (key value)
+  ;; 1. update DB
+  ;; 2. update cache
+  )
+
+(defsetf config-param %set-config-param)
+
+
+
+;; FIXME: define VIEW-TEMPLATE-PRINTER
 
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defun parse-abstract5-uri (domain-name uri)
+  )
+
 (defun http-request-handler (request)
   (with-site-context ((hunchentoot:host request))
     ;; check maintenance?
     ;; ...
-    (multiple-value-bind (model view controller)
-	;; FIXME:
-	(get-mvc-from-uri FIXME)
-      (render-html view (get-view-environment controller)))))
+    (let ((domain-name (hunchentoot:host request)))
+      (multiple-value-bind (mvc operation operands)
+	  ;; FIXME: define 404 mvc, Error mvc, etc
+	  ;; At this point, mvc and operation have proper values.
+	  ;; E.g., mvc can be 404 mvc for invalid operation
+	  (parse-abstract5-uri domain-name (hunchentoot:request-uri request))
+	(let ((mvc-key (mvc-key mvc)))
+	  ;; render-view-with-env may have :before, :after, and :around
+	  (render-view-with-env mvc-key mvc (run-operation&get-env mvc-key mvc operator operands)))))))
 
 (defun main ()
   ;; check config file. Load it or start installation web page

@@ -55,4 +55,34 @@
 							 :new-element-hook #'axmls-new-element-hook
 							 :finish-element-hook #'axmls-finish-element-hook
 							 :text-hook #'axmls-text-hook)))))
+;;;
+;;; Because of concrete5 schema design, it seems really hard to use it as 'object blue print'.
+;;; Play with mysql DB first and see if switching to postgresql is feasible.
+;;;
+;;; I do not want to change existing concrete5, but want piggy backing by just using it.
+;;;
+
+#|
+(defparameter *lsexp->postgres-mapping*
+
+
+(defun lsexp->postgresql (def)
+
+
+  (:TABLE :NAME "AreaGroupBlockTypes"
+	  (:FIELD :SIZE "10" :TYPE "I" :NAME "cID" (:KEY) (:DEFAULT :VALUE "0")
+		  (:UNSIGNED))
+	  (:FIELD :SIZE "255" :TYPE "C" :NAME "arHandle" (:KEY))
+	  (:FIELD :SIZE "10" :TYPE "I" :NAME "gID" (:KEY) (:DEFAULT :VALUE "0")
+		  (:UNSIGNED))
+	  (:FIELD :SIZE "10" :TYPE "I" :NAME "uID" (:KEY) (:DEFAULT :VALUE "0")
+		  (:UNSIGNED))
+	  (:FIELD :SIZE "10" :TYPE "I" :NAME "btID" (:KEY) (:DEFAULT :VALUE "0")
+		  (:UNSIGNED)))
+
+
+(def-view-class area-group-block-types ()
+  (
+|#
+
 ;;; CLASS-GENERATOR.LISP ends here

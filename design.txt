@@ -70,6 +70,7 @@
 
 * Ex - http://andrewembler.com/posts/custom-concrete5-user-reports/
 ;; NB: user-visited-page-list and :site are a key to map request to MVC component
+;; Internal key is - :!TEST!-USER-VISITED-PAGE-LIST
 (define-mvc user-visited-page-list (:site test) ;; without :site, it is visible to all sites
   :model ((:inherit (user-list))
 	  (:slots   (filters))
