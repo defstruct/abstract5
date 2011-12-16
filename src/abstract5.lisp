@@ -109,12 +109,31 @@
 
 
 ;; FIXME: move to proper place
-(defun get-site-html-lang ()
-  "en")
+(defun get-site-environment ()
+  '(:html-lang "abc"
+    ;; FIXME: get actual values from site object *mvc-site*
+    :theme-html-header (("site-instances/root/themes/core/header-view.html"
+			 ;; FIXME: establish site based css, img, etc directories
+			 :charset "UTF-8"
+			 :title   "Login"
+			 :meta-description "Some description"
+			 :meta-keywords "key1 key2 etc"
+			 ;; :meta-content-lang "en-AU"
+			 :theme-css-files ((:css-file "/site-instances/root/themes/core/css/ccm.default.theme.css")
+					   (:css-file "/site-instances/root/themes/core/css/ccm.base.css"))
+			 :theme-js-files ((:js-file "/site-instances/root/themes/core/js/jquery.js")
+					  (:js-file "/site-instances/root/themes/core/js/ccm.base.js"))
+			 ))
+    :theme-html-body ((path1 :var "xxx")
+		      (path2 :var "yyy"))
+    :theme-html-footer ((path1 :var "xxx")
+			(path2 :var "yyy"))
+    :theme-css-files ((:css-file "ccm.default.theme.css"))
+	      ;; no :extra-header
+    :mvc-errors (get-mvc-errors)))
 
 (defun get-global-environment ()
-  `(:mvc-errors ,(get-mvc-errors)
-    :html-lang ,(get-site-html-lang)))
+  `(:html-lang ,(get-site-html-lang)))
 
 (defmacro with-mvc-site-env ((mvc) &body body)
   `(let ((*database* (switch-db-schema "FIXME"))
@@ -180,14 +199,17 @@
 	(let ((mvc-key (mvc-key mvc)))
 	  ;; render-view-with-env may have :before, :after, and :around
 	  (with-mvc-site-env (mvc)
-	    (render-view-with-env mvc-key
-				  mvc
-				  (append (handler-bind ((mvc-error #'(lambda (error)
-									(push-mvc-error (error-message error))
-									(throw 'mvc-error-catch nil))))
-					    (catch 'mvc-error-catch
-					      (run-operation&get-env mvc-key mvc operator operands)))
-					  (get-global-environment)))))))))
+	    (let ((mvc-env (handler-bind ((mvc-error #'(lambda (error)
+							 (push-mvc-error (error-message error))
+							 (throw 'mvc-error-catch nil))))
+			     (catch 'mvc-error-catch
+			       (run-operation&get-env mvc-key mvc operator operands)))))
+	      (set-content-type-header mvc) ;; instead of <meta ... content-type...>
+	      (render-view-with-env mvc-key
+				    mvc
+				    (append mvc-env
+					    (get-site-environment)
+					    (get-global-environment))))))))))
 
 (defun main ()
   ;; check config file. Load it or start installation web page

@@ -1,0 +1,79 @@
+
+  <body>
+
+    <div id="ccm-logo"><img src="/concrete/images/logo_menu.png" width="49" height="49" alt="Concrete CMS" /></div>
+
+    <div id="ccm-theme-wrapper">
+
+
+      <div style="position: relative">
+
+	<h1>Sign in to defstruct</h1>
+
+
+
+
+
+	<div class="ccm-form">
+
+	  <form method="post" action="/index.php/login/do_login/">
+	    <div>
+	      <label for="uName">		Username	</label><br/>
+	      <input type="text" name="uName" id="uName"  class="ccm-input-text">
+	    </div>
+	    <br>
+	    <div>
+	      <label for="uPassword">Password</label><br/>
+	      <input type="password" name="uPassword" id="uPassword" class="ccm-input-text">
+	    </div>
+
+
+
+
+	    <div style="float: left; width: 120px; padding-top: 12px"><input type="checkbox"  class="ccm-input-checkbox" name="uMaintainLogin" id="uMaintainLogin" value="1"  /> <label for="uMaintainLogin">Remember Me</label></div>
+
+	    <div class="ccm-button">
+	      <input type="submit" class="ccm-input-submit" id="submit" name="submit" value="Sign In &gt;" />	</div>
+	    <div class="ccm-spacer">&nbsp;</div>
+	    <input type="hidden" name="rcID" value="" />
+	  </form>
+	</div>
+
+	<div class="ccm-form">
+
+	  <h2 style="margin-top:32px">Forgot Your Password?</h2>
+
+	  <p>If you've forgotten your password, enter your email address below. We will reset it to a new password, and send the new one to you.</p>
+
+	</div>
+
+	<div class="ccm-form">
+
+	  <a name="forgot_password"></a>
+
+	  <form method="post" action="/index.php/login/forgot_password/">
+
+	    <label for="uEmail">Email Address</label><br/>
+	    <input type="hidden" name="rcID" value="" />
+	    <input type="text" name="uEmail" value="" class="ccm-input-text" >
+
+	    <div class="ccm-button">
+	      <input type="submit" class="ccm-input-submit" id="submit" name="submit" value="Reset and Email Password &gt;" />	</div>
+
+	  </form>
+
+	</div>
+
+
+	<script type="text/javascript">
+	  document.getElementById("uName").focus();
+	</script>
+
+
+      </div>
+
+
+    </div>
+
+  </body>
+</html>
