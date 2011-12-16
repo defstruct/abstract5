@@ -19,63 +19,69 @@
    Report bugs to: jongwon.choi@internode.on.net")
 
 (define-mvc login () ;; without :site, all sites share this definition
-  :model ((:inherit (user-list))
-	  (:slots   (filters))
-	  (:methods ((get-page ((user-visited-page-list user-visited-page-list) filters)
-			       "return user objects"))))
-  :view ((:uri  "/user-visited-page-list") ;; will map test.domain/user-visited-page-list
-	 ;; map site-instances/test/components/user-visited-page-list.html
-	 ;; or  site-instances/root/components/user-visited-page-list.html (when no :site)
-	 (:html "component/user-visited-page-list.html")
-	 )
-  :controller ((:methods ((do-login (mvc operator (user-name :user-name) (password :password))
+  :view ((:uri  "/login.html")
+	 (:html "html-views/login.html"))
+  :controller ((:methods ((do-login (mvc operator
+					 (user-name :user-name :string) (password :password :string)
+					 (maintain-login :maintain-login :boolean)
+					 ;; FIXME: :list vs :ordered-list
+					 (attributes :user-attributes :list))
 			    (when (banned-ip (hunchentoot:real-remote-addr))
-			      (push-mvc-error (banned-error-message)))
+			      (error 'mvc-error :message (get-mvc-message :ip-banned)))
 			    ;; FIXME: open-id-auth
 			    (when (or (whitespace-string? user-name)
 				      (whitespace-string? password))
-			      (push-mvc-error (get-mvc-message :user-name-passowrd-required
-							       (config-param :user-registration-with-email-address))))
-			    (let ((user (find-abstract5-user user-name password)))
-			      ...
-			      ;; you're here!
+			      (error 'mvc-error :message (get-mvc-message :user-name-passowrd-required
+									  (config-param :user-registration-mode))))
+			    ;; FIXME: login-user has optional site arg
+			    ;; and with-mvc-site-env *mvc-site* is the default
+			    (let ((user (login-user user-name password)))
+			      (bind-case (status (user-status user))
+				((:user-non-validated :user-inactive)
+				 (error 'mvc-error (get-mvc-message status)))
+				((:user-invalid)
+				 (error 'mvc-error (get-mvc-message status (config-param :user-registration-mode)))))
+
+			      (when maintain-login
+				(maintain-login-via-cookie user))
+
+			      ;; FIXME: Does user need locale? Why not site based locale? (in php code)
+
+			      (when attributes
+				(fill-unfiled-attributes-FIXME)
+				(bind-when (unfilled-attributes (collect-FIXME-unfilled-attributes))
+					   (logout-user user)
+					   (return (:FIXME))))
+
+			      ;; FIXME: php fire on-user-login here
+
+			      ;; FIXME: json login?
+			      ;;header("Cache-Control: no-store, no-cache, must-revalidate");
+			      ;;header("Pragma: no-cache");
+			      ;;header('Expires: Fri, 30 Oct 1998 14:19:41 GMT'); //in the past
+
+			      (clear-http-cache)
+			      (hunchentoot:redirect (redirect-uri (or (user-redirect-uri user) (site-redirect-uri)) "/"))
+
+			      ;; FIXME: macro need to
+			      ;; - add mvc-key in argslist
+			      ;; - add with-site-db
+			      ;; - add with-site-env (for site relevant vars)
+			      ;; - add with-http-params
+			      ;; - openID stuff
+
+			      ))))))
 
 
-
-			    ;; FIXME: macro need to
-			    ;; - add mvc-key in argslist
-			    ;; - add with-site-db
-			    ;; - add with-site-env (for site relevant vars)
-			    ;; - add with-http-params
-			    ;; - openID stuff priority
-			    ;;
-			    ;; If there is any error, show the error later
-			    (let ((user-name-label (if (config-param :user-registration-with-email-address)
-						       "Email Address"
-						       "Username")))
-			      (setf user-name (string-trim-whitespace user-name))
+;; FIXME: move to *root-site* definition file
+(define-mvc-messages login () ;; (:site test) , etc
+  ((:ip-banned "Unable to complete action: your IP address has been banned. Please contact the administrator of this site for more information.")
+   (:user-name-passowrd-required :use-email "An email address and password are required.")
+   (:user-name-passowrd-required :use-user-name "A username and password are required.")
+   (:user-non-validated "This account has not yet been validated. Please check the email associated with this account and follow the link it contains.")
+   (:user-invalid :use-email "Invalid email address or password.")
+   (:user-invalid :use-user-name "Invalid username or password.")
+   (:user-inactive "This user is inactive. Please contact us regarding this account.")))
 
 
-
-			  (search-users ((controller user-visited-page-list) :page-id :dt-from :dt-to :num-results)
-			    ;; send this to view
-			    (:user-email-class ""
-			     :user-email-href ""
-			     :first-name-class ""
-			     :first-name-href ""
-			     :second-name-class ""
-			     :second-name-href ""
-			     ...
-			     :loop-result
-			     ((:user-id ""
-			       :user-id-href ""
-			       :first-name ""
-			       :last-name ""
-			       ...)
-			      (:user-id ""
-			       :user-id-href ""
-			       :first-name ""
-			       :last-name ""
-			       ...)
-			      ...)))))))
 ;;; LOGIN.LISP ends here

@@ -86,11 +86,27 @@
 ;;; MVC functions/generic functions
 ;;;
 ;; FIXME: with-mvc-site-env bind *mvc-errors*
+
+(define-condition mvc-error ()
+  ((message :type string :initarg :message :initform "" :reader mvc-error-message)))
+
 (defvar *mvc-errors*) ;; used to accumulate error messages
 (defun push-mvc-error (error-message)
   (push error-message *mvc-errors*))
 (defun get-mvc-errors ()
   (reverse *mvc-errors*))
+
+;; FIXME: with-mvc-site-env bind *mvc-site*
+(defvar *mvc-site*)
+
+(defun get-mvc-message (&rest keys)
+  "Get the message with given keys under *mvc-site*"
+  (let ((message (or (gethash (mvc-message-map *mvc-site*) keys)
+		     (gethash (mvc-message-map *root-site*) keys))))
+    (unless message
+      (error "Programming Error! GET-MVC-MESSAGE does not have the entry for ~S" keys))
+    message))
+
 
 ;; FIXME: move to proper place
 (defun get-site-html-lang ()
@@ -100,12 +116,20 @@
   `(:mvc-errors ,(get-mvc-errors)
     :html-lang ,(get-site-html-lang)))
 
+(defmacro with-mvc-site-env ((mvc) &body body)
+  `(let ((*database* (switch-db-schema "FIXME"))
+	 (*mvc-errors* ())
+	 (*mvc-site* (find-mvc-site??? "FIXME")))
+     ,@body))
+
+;;;;
+
 (defgeneric run-operation&get-env (mvc-key mvc operator operands)
   (:documentation
    "Run OPERATOR with OPERANDS of given MVC-KEY and MVC then return an environment of key value pairs as in HTML-TEMPLATE library.")
   (:method append ((key t) mvc operator operands)
 	   (declare (ignore mvc operator operands operands))
-	   (append (apply operator operands) (get-global-environment)))
+	   (append (apply operator operands) ))
   (:method-combination append))
 
 (defgeneric render-view-with-env (mvc-key mvc env)
@@ -156,7 +180,14 @@
 	(let ((mvc-key (mvc-key mvc)))
 	  ;; render-view-with-env may have :before, :after, and :around
 	  (with-mvc-site-env (mvc)
-	    (render-view-with-env mvc-key mvc (run-operation&get-env mvc-key mvc operator operands))))))))
+	    (render-view-with-env mvc-key
+				  mvc
+				  (append (handler-bind ((mvc-error #'(lambda (error)
+									(push-mvc-error (error-message error))
+									(throw 'mvc-error-catch nil))))
+					    (catch 'mvc-error-catch
+					      (run-operation&get-env mvc-key mvc operator operands)))
+					  (get-global-environment)))))))))
 
 (defun main ()
   ;; check config file. Load it or start installation web page
