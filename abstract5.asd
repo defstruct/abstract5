@@ -44,19 +44,20 @@
 
 (defconstant +abstract5-version+ "$Revision$"
   "$Id$
-   Report bugs to: jongwon.choi@internode.on.net")
+   Report bugs to: jongwon.choi@defstruct.com")
 
 (defsystem :abstract5
   :name "abstract5"
   :author "Jong-won Choi <jongwon.choi@defstruct.com>"
   :maintainer "Jong-won Choi <jongwon.choi@defstruct.com>"
-  :license "Proprietorial"
+  :license "BSD-style - http://www.opensource.org/licenses/bsd-license.php"
   :serial t
-  :description "FIXME"
-  :long-description "FIXME"
+  :description "Concrete5 like CMS with better quality"
+;;  :long-description ""
   :version +abstract5-version+
-  :depends-on (:hunchentoot-base :clsql)
+  :depends-on (:hunchentoot :clsql :clsql-postgresql-socket :html-template)
+  :pathname "src/"
   :components ((:file "package")
-               (:file "")))
+               (:file "abstract5")))
 
 ;;; ABSTRACT5.ASD ends here

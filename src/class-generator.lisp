@@ -39,7 +39,7 @@
 
 (defconstant +class-generator-version+ "$Revision$"
   "$Id$
-   Report bugs to: jongwon.choi@internode.on.net")
+   Report bugs to: jongwon.choi@defstruct.com")
 
 (asdf:load-system :s-xml :verbose t)
 (use-package :s-xml)

@@ -39,7 +39,7 @@
 
 (defconstant +abstract5-version+ "$Revision$"
   "$Id$
-   Report bugs to: jongwon.choi@internode.on.net")
+   Report bugs to: jongwon.choi@defstruct.com")
 
 (defparameter *abstract5-home-dir* (merge-pathnames "../" *load-pathname*)
   "Pathname for the 'abstract5/site-instances/defstruct'")

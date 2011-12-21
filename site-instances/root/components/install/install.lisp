@@ -16,7 +16,7 @@
 
 (defconstant +install-version+ "$Revision$"
   "$Id$
-   Report bugs to: jongwon.choi@internode.on.net")
+   Report bugs to: jongwon.choi@defstruct.com")
 ;; theme, package, resource, blocks...
 
 (define-html-page install ("install") ;; URI->page mapping

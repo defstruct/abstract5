@@ -39,7 +39,7 @@
 
 (defconstant +macros-version+ "$Revision$"
   "$Id$
-   Report bugs to: jongwon.choi@internode.on.net")
+   Report bugs to: jongwon.choi@defstruct.com")
 
 (defmacro define-single-page (name (uri) &body body)
   )

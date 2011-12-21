@@ -39,7 +39,7 @@
 
 (defconstant +utils-version+ "$Revision: 278419e59d12 $"
   "$Id: utils.lisp,v 278419e59d12 2011/08/13 21:04:44 Jong-won Choi $
-   Report bugs to: jongwon.choi@internode.on.net")
+   Report bugs to: jongwon.choi@defstruct.com")
 
 (defun obfuscate-for-js (string)
   (with-output-to-string (out)

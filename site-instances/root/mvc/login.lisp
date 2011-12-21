@@ -39,7 +39,7 @@
 
 (defconstant +login-version+ "$Revision$"
   "$Id$
-   Report bugs to: jongwon.choi@internode.on.net")
+   Report bugs to: jongwon.choi@defstruct.com")
 
 (define-mvc login () ;; without :site, all sites share this definition
   :view ((:uri  "/login")
@@ -48,7 +48,7 @@
 					 (user-name :user-name :string)
 					 (password :password :string)
 					 (maintain-login :maintain-login :boolean)
-					 (email :email :string)
+					 ;;(email :email :string)
 					 ;; FIXME: :list vs :ordered-list
 					 (attributes :user-attributes :list))
 			    (when (banned-ip (hunchentoot:real-remote-addr))

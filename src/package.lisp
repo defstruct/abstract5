@@ -39,14 +39,14 @@
 
 (defpackage "ABSTRACT5"
 ;;  (:nicknames "DEFSTRUCT")
-  (:use :cl :utils :hunchentoot :hunchentoot-base :clsql)
+  (:use :cl :hunchentoot :hunchentoot :clsql)
   (:import-from :abstract5-asd :+abstract5-version+))
 
-(in-package :defstruct)
+(in-package :abstract5)
 
 (defconstant +package-version+ "$Revision$"
   "$Id$
-   Report bugs to: jongwon.choi@internode.on.net")
+   Report bugs to: jongwon.choi@defstruct.com")
 
 
 ;;; PACKAGE.LISP ends here

@@ -39,7 +39,7 @@
 
 (defconstant +sites-version+ "$Revision$"
   "$Id$
-   Report bugs to: jongwon.choi@internode.on.net")
+   Report bugs to: jongwon.choi@defstruct.com")
 
 (def-abstract5-site root ("www.defstruct" "defstruct")
   "/")

@@ -39,7 +39,7 @@
 
 (defconstant +permissions-version+ "$Revision$"
   "$Id$
-   Report bugs to: jongwon.choi@internode.on.net")
+   Report bugs to: jongwon.choi@defstruct.com")
 
 ;;(use-package :clsql)
 
