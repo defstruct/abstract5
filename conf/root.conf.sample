@@ -9,14 +9,14 @@
 	    ;; NOTE: instead of using :password,
 	    ;; using PostgreSQL's own authentication method recommended.
 	    ;; E.g. allow local socket connection without password
-	    :password "#1 the strongest(?) password."
+	    :password "The strongest(?), #1 password."
 	    :name "abstract5"))
-
+#+XXX
 (:site (:name defstruct
 	:domains ("www.defstruct.com" "defstruct.com")
 	;; NOTE: db-schema is "defstruct"
 	;;	 home is "/path-to-abstract5/site-instances/defstruct"
 	))
-
+#+XXX
 (:site (:name test
 	:domains ("test.defstruct.com")))

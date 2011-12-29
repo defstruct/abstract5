@@ -1,3 +1,5 @@
+http://www.concrete5.org/documentation/general-topics/attributes/
+
 * Admins
   - Root admin can do editing configuration file.
     E.g. DB configuration and multi-site configuration

@@ -41,7 +41,7 @@
   "$Id$
    Report bugs to: jongwon.choi@defstruct.com")
 
-(defparameter *abstract5-home-dir* (merge-pathnames "../" *load-pathname*)
+(defparameter *abstract5-home-dir* (directory-namestring (merge-pathnames "../" *load-pathname*))
   "Pathname for the 'abstract5/site-instances/defstruct'")
 
 ;;;
@@ -63,7 +63,9 @@
 
 (defparameter *site-paths*
   ;; FIXME: not finalised yet
-  (mapcar #'make-pathname '("packages" "themes")))
+  (mapcar #'(lambda (dir)
+	      (make-pathname :directory `(:relative ,dir)))
+	  '("packages" "themes")))
 
 (defun ensure-site-directories-exist (site-home)
   (dolist (path *site-paths*)
@@ -245,7 +247,6 @@
 
   ;; timezone, session,
   )
-
 
 ;;;
 ;;; Replace Hunchentoot's dispatcher function

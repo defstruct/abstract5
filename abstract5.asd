@@ -58,6 +58,7 @@
   :depends-on (:hunchentoot :clsql :clsql-postgresql-socket :html-template)
   :pathname "src/"
   :components ((:file "package")
-               (:file "abstract5")))
+               (:file "utils")
+	       (:file "abstract5")))
 
 ;;; ABSTRACT5.ASD ends here
