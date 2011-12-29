@@ -246,7 +246,8 @@
   ;; check patch files. Load them
 
   ;; timezone, session,
-  )
+  (setf hunchentoot:*hunchentoot-default-external-format* hunchentoot::+utf-8+)
+  (hunchentoot:start (make-instance 'hunchentoot:acceptor :port 8080)))
 
 ;;;
 ;;; Replace Hunchentoot's dispatcher function
@@ -254,7 +255,6 @@
 (in-package :hunchentoot)
 
 (defun list-request-dispatcher (request)
-  (declare (ignore request))
-  #'abstract5::http-request-handler)
+  (abstract5::http-request-handler request))
 
 ;;; ABSTRACT5.LISP ends here
