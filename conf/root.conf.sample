@@ -4,13 +4,7 @@
 ;;; The sample configuration file
 ;;;
 
-(:database (:server "localhost"
-	    :username "abstract5"
-	    ;; NOTE: instead of using :password,
-	    ;; using PostgreSQL's own authentication method recommended.
-	    ;; E.g. allow local socket connection without password
-	    :password "The strongest(?), #1 password."
-	    :name "abstract5"))
+(:db-connection-spec '(#P"/var/run/postgresql/.s.PGSQL.5432" "abstract5" "jc" nil 5432))
 #+XXX
 (:site (:name defstruct
 	:domains ("www.defstruct.com" "defstruct.com")

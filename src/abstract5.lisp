@@ -39,7 +39,7 @@
 
 (defconstant +abstract5-version+ "$Revision$"
   "$Id$
-   Report bugs to: jongwon.choi@defstruct.com")
+   Report bugs to: jongwon.choi@defstrutc.com")
 
 (defparameter *abstract5-home-dir* (directory-namestring (merge-pathnames "../" *load-pathname*))
   "Pathname for the 'abstract5/site-instances/defstruct'")
@@ -246,6 +246,9 @@
   ;; check patch files. Load them
 
   ;; timezone, session,
+  ;; FIXME: read from config file
+  (clsql-sys:connect '(#P"/var/run/postgresql/.s.PGSQL.5432" "abstract5" "jc" nil 5432))
+
   (setf hunchentoot:*hunchentoot-default-external-format* hunchentoot::+utf-8+)
   (hunchentoot:start (make-instance 'hunchentoot:acceptor :port 8080)))
 
@@ -258,3 +261,9 @@
   (abstract5::http-request-handler request))
 
 ;;; ABSTRACT5.LISP ends here
+#|
+
+(build-multi-site-instances '((:name :domains :db-schema :home)))
+|#
+
+;(clsql:def-view-class

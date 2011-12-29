@@ -1,4 +1,4 @@
-;;;;   -*- Mode: lisp; Package: cl-user; Syntax: Common-lisp -*-
+;;;;   -*- Mode: lisp; Package: cl-user; Syntax: Common-lisp; encoding: utf-8; -*-
 ;;
 ;; Copyright (C) 2011 Jong-won Choi
 ;; All rights reserved.
@@ -37,29 +37,29 @@
 
 (in-package :cl-user)
 
-(defpackage :abstract5-asd
-  (:use :cl :asdf))
-
-(in-package :abstract5-asd)
-
-(defconstant +abstract5-version+ "$Revision$"
+(defconstant +3rd-party-patch-version+ "$Revision$"
   "$Id$
    Report bugs to: jongwon.choi@defstruct.com")
 
-(defsystem :abstract5
-  :name "abstract5"
-  :author "Jong-won Choi <jongwon.choi@defstruct.com>"
-  :maintainer "Jong-won Choi <jongwon.choi@defstruct.com>"
-  :license "BSD-style - http://www.opensource.org/licenses/bsd-license.php"
-  :serial t
-  :description "Concrete5 like CMS with better quality"
-;;  :long-description ""
-  :version +abstract5-version+
-  :depends-on (:hunchentoot :clsql :clsql-postgresql-socket :html-template)
-  :pathname "src/"
-  :components ((:file "package")
-               (:file "utils")
-	       (:file "3rd-party-patch")
-	       (:file "abstract5")))
+(in-package #:clsql-sys)
 
-;;; ABSTRACT5.ASD ends here
+;; Use weak-hash
+(setf *output-hash* (tg:make-weak-hash-table :test #'equal :weakness :value))
+
+;; patch clsql
+(deftype text ()
+  "Postgresql varying string"
+  'string)
+
+(export 'text :clsql-sys)
+
+(import 'text :clsql)
+(import 'text :clsql-user)
+
+(export 'text :clsql)
+(export 'text :clsql-user)
+
+;;; CLSQL-EXT.LISP ends here
+
+
+;;; 3RD-PARTY-PATCH.LISP ends here
