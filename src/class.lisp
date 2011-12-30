@@ -77,6 +77,14 @@
 (define-persistent-class oid-mixin ()
   ((oid :reader oid :db-kind :key :type integer :db-constraints (:not-null :auto-increment))))
 
+(defmethod print-object ((self oid-mixin) stream)
+  (print-unreadable-object (self stream :type t :identity t)
+    (princ (if (slot-boundp self 'oid)
+	       (oid self)
+	       "unbound")
+	   stream))
+  self)
+
 (defmethod shared-initialize :after ((instance oid-mixin)
 				     slot-names
 				     &rest keys)
