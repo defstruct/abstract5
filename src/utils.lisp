@@ -77,7 +77,7 @@
 
 (defun empty-string-p (str)
   (zerop (length str)))
-
+#+XXX
 (defun read-text-file (pathname)
   (with-open-file (in pathname :element-type '(unsigned-byte 8))
     (let ((sequence (make-array (file-length in)

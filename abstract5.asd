@@ -60,6 +60,7 @@
   :components ((:file "package")
                (:file "utils")
 	       (:file "3rd-party-patch")
+	       (:file "class")
 	       (:file "abstract5")))
 
 ;;; ABSTRACT5.ASD ends here

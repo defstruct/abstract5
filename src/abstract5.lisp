@@ -78,7 +78,8 @@
     (assert (and (listp domains) (every #'stringp domains))
 	    ()
 	    "Given domains ~S must be list of strings" domains)
-    (assert (not (find name *multi-site-instances* :key abstract5-site-name))
+    #+FIXME
+    (assert (not (find name *multi-site-instances* :key #'abstract5-site-name))
 	    ()
 	    "Site ~S exists" name)
 
@@ -124,6 +125,7 @@
 ;; FIXME: with-mvc-site-env bind *mvc-site*
 (defvar *mvc-site*)
 
+#+FIXME
 (defun get-mvc-message (&rest keys)
   "Get the message with given keys under *mvc-site*"
   (let ((message (or (gethash (mvc-message-map *mvc-site*) keys)
@@ -159,10 +161,10 @@
     :theme-css-files ((:css-file "ccm.default.theme.css"))
 	      ;; no :extra-header
     :mvc-errors (get-mvc-errors)))
-
+#+FIXME
 (defun get-global-environment ()
   `(:html-lang ,(get-site-html-lang)))
-
+#+FIXME
 (defmacro with-mvc-site-env ((mvc) &body body)
   `(let ((*database* (switch-db-schema "FIXME"))
 	 (*mvc-errors* ())
@@ -175,7 +177,7 @@
   (:documentation
    "Run OPERATOR with OPERANDS of given MVC-KEY and MVC then return an environment of key value pairs as in HTML-TEMPLATE library.")
   (:method append ((key t) mvc operator operands)
-	   (declare (ignore mvc operator operands operands))
+	   (declare (ignore mvc))
 	   (append (apply operator operands) ))
   (:method-combination append))
 
@@ -184,7 +186,8 @@
    "Return HTML view of MVC after applying ENV. MVC-KEY is the method specializer")
   (:method (mvc-key mvc env)
     (declare (ignore mvc-key))
-    (html-template:fill-and-print-template (view-template-printer mvc) env *html-output-stream*)))
+    #+FIXME
+    (html-template:fill-and-print-template (view-template-printer mvc) env :stream *html-output-stream*)))
 
 ;;;
 ;;; with-site-db, with-site-env, with-http-params
@@ -214,10 +217,25 @@
 (defun parse-abstract5-uri (domain-name uri)
   )
 
+(defun request->db-schema-name (http-request)
+  (let ((host-name (hunchentoot:host http-request)))
+    (subseq host-name 0 (min (position #\. host-name)
+			     (position #\: host-name)))))
+
 (defun http-request-handler (request)
-  (with-site-context ((hunchentoot:host request))
+  (print `(remote-addr ,(hunchentoot:remote-addr request)
+		       remote-port ,(hunchentoot:remote-port request)
+		       request-method ,(hunchentoot:request-method request)
+		       request-uri ,(hunchentoot:request-uri request)
+		       server-protocol ,(hunchentoot:server-protocol request)
+		       script-name ,(hunchentoot:script-name request)
+		       real-remote-addr ,(hunchentoot:real-remote-addr request)
+		       user-agent ,(hunchentoot:user-agent )
+		       ))
+  (with-site-context ((request->db-schema-name request))
     ;; check maintenance?
     ;; ...
+    #+FIXME
     (let ((domain-name (hunchentoot:host request)))
       (multiple-value-bind (mvc operation operands)
 	  ;; FIXME: define 404 mvc, Error mvc, etc
@@ -247,7 +265,7 @@
 
   ;; timezone, session,
   ;; FIXME: read from config file
-  (clsql-sys:connect '(#P"/var/run/postgresql/.s.PGSQL.5432" "abstract5" "jc" nil 5432))
+  (clsql-sys:connect '(#P"/var/run/postgresql/.s.PGSQL.5432" "abstract5" "jc" nil 5432) :encoding :utf-8)
 
   (setf hunchentoot:*hunchentoot-default-external-format* hunchentoot::+utf-8+)
   (hunchentoot:start (make-instance 'hunchentoot:acceptor :port 8080)))

@@ -37,19 +37,24 @@
 
 (in-package :abstract5)
 
-(defconstant +macros-version+ "$Revision$"
+(defconstant +class-test-version+ "$Revision$"
   "$Id$
    Report bugs to: jongwon.choi@defstruct.com")
 
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defmacro define-single-page (name (uri) &body body)
-  )
-
-(define-html-page install ("install") ;; URI->page mapping
-  :model	()
-  :controller	(:before nil :primary %install :after nil)
-  :view		(:theme core :header "header" :template "install.html"))
-
-
-;;; MACROS.LISP ends here
+(let* ((site (make-db-instance 'site :name "Test localhost" :description "test site"))
+       (subdomain (make-db-instance 'subdomain :name "localhost" :site site))
+       (admin (make-db-instance 'admin :name "Jong-won Choi" :site site)))
+  (list site subdomain admin))
+;;(trace (:method iNITIALIZE-INSTANCE :AROUND (CLSQL-SYS::VIEW-CLASS-DIRECT-SLOT-DEFINITION)))
+#|
+drop table admin;
+drop table oid_mixin ;
+drop table site      ;
+drop table subdomain ;
+drop sequence admin_oid_seq    ;
+drop sequence oid_seq    ;
+drop sequence oid_mixin_oid_seq;
+drop sequence site_oid_seq     ;
+drop sequence subdomain_oid_seq;
+|#
+;;; CLASS-TEST.LISP ends here
