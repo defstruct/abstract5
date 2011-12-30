@@ -69,46 +69,4 @@
 (export 'text :clsql)
 (export 'text :clsql-user)
 
-;;
-;; Auto increment
-;;
-
-;;
-;; Use SERIAL
-;; (http://www.postgresql.org/docs/8.4/interactive/datatype-numeric.html#DATATYPE-SERIAL)
-;;
-(defmethod database-generate-column-definition (class slotdef (database generic-postgresql-database))
-  ; handle autoincr slots special
-  (when (or (and (listp (view-class-slot-db-constraints slotdef))
-		 (member :auto-increment (view-class-slot-db-constraints slotdef)))
-	    (eql :auto-increment (view-class-slot-db-constraints slotdef))
-	    (slot-value slotdef 'autoincrement-sequence))
-    (let ((sequence-name (database-make-autoincrement-sequence class slotdef database)))
-      (setf (view-class-slot-autoincrement-sequence slotdef) sequence-name)
-      (cond ((listp (view-class-slot-db-constraints slotdef))
-	     (setf (view-class-slot-db-constraints slotdef)
-		   (remove :auto-increment
-			   (view-class-slot-db-constraints slotdef)))
-	     (unless (member :default (view-class-slot-db-constraints slotdef))
-	       (setf (view-class-slot-db-constraints slotdef)
-		     (append
-		      (list :default (format nil "nextval('~a')" sequence-name))
-		      (view-class-slot-db-constraints slotdef)))))
-	    (t
-	     (setf (view-class-slot-db-constraints slotdef)
-		   (list :default (format nil "nextval('~a')" sequence-name)))))))
-  (call-next-method class slotdef database))
-
-(defmethod database-make-autoincrement-sequence (table column (database generic-postgresql-database))
-  (let* ((table-name (view-table table))
-	 (column-name (view-class-slot-column column))
-	 (sequence-name (or (slot-value column 'autoincrement-sequence)
-			    (convert-to-db-default-case
-			     (format nil "~a_~a_SEQ" table-name column-name) database))))
-    (unless (sequence-exists-p sequence-name  :database database)
-      (database-create-sequence sequence-name database))
-    sequence-name))
-;;; CLSQL-EXT.LISP ends here
-
-
 ;;; 3RD-PARTY-PATCH.LISP ends here
