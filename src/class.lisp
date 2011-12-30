@@ -58,13 +58,14 @@
       (create-view-from-class class))))
 
 (defun fix-oid-autoincrement (class-name)
-  (let* ((oid-seq "oid_seq")
-	 (class (find-class class-name))
-	 (oid-slots (list (find 'oid (clsql-sys::class-slots class) :key #'ccl:slot-definition-name)
-			  (find 'oid (clsql-sys::key-slots class) :key #'ccl:slot-definition-name))))
-    (dolist (oid-slot oid-slots)
-      (when oid-slot
-	(setf (clsql-sys::view-class-slot-autoincrement-sequence oid-slot) oid-seq)))))
+  (let ((oid-seq "oid_seq")
+	(class (find-class class-name)))
+    (flet ((maybe-set-oid-seq (slots)
+	     (bind-when (oid-slot (find 'oid slots :key #'ccl:slot-definition-name))
+	       (setf (clsql-sys::view-class-slot-autoincrement-sequence oid-slot) oid-seq))))
+      ;; NB: CLSQL uses two different kind of slots (not sure why)
+      (maybe-set-oid-seq (clsql-sys::ordered-class-slots class))
+      (maybe-set-oid-seq (clsql-sys::keyslots-for-class class)))))
 
 (defmacro define-persistent-class (name (&rest super-classes) &body body)
  `(prog1
@@ -75,6 +76,30 @@
 
 (define-persistent-class oid-mixin ()
   ((oid :reader oid :db-kind :key :type integer :db-constraints (:not-null :auto-increment))))
+
+(defmethod shared-initialize :after ((instance oid-mixin)
+				     slot-names
+				     &rest keys)
+  (declare (ignore keys slot-names))
+  ;; Persistent class (inherited from oid-mixin) may have join + non 'oid' home-key
+  ;; which is 'ownership'.
+  ;; If that's the case, set the home-key slot if it is unbound
+  ;; and the join slot has value.
+  (let ((all-slots (clsql-sys::ordered-class-slots (class-of instance))))
+    (dolist (slot all-slots)
+      (let ((slot-name (ccl:slot-definition-name slot)))
+	(bind-when (join-value (and (typep instance 'oid-mixin)
+				    (eq (clsql-sys::view-class-slot-db-kind slot) :join)
+				    (slot-boundp instance slot-name)
+				    (slot-value instance slot-name)))
+	  (let* ((db-info (clsql-sys::view-class-slot-db-info slot))
+		 (join-id-slot-name (gethash :home-key db-info)))
+	    ;; when it is ownership...
+	    (when (and (not (eq join-id-slot-name 'oid))
+		       (not (slot-boundp instance join-id-slot-name) )
+		       (eq (gethash :foreign-key db-info) 'oid))
+	      (setf (slot-value instance join-id-slot-name)
+		    (oid join-value)))))))))
 
 (define-persistent-class subdomain (oid-mixin)
   ((name :reader site-name :initarg :name :type text :db-kind :base :db-constraints (:not-null :unique))
@@ -90,12 +115,12 @@
   ((name :accessor admin-name :initarg :name :type text :db-kind :base)
    ;; email, phone, address, etc
    (site-oid :reader site-oid :type integer :db-kind :base)
-   (site :reader subdomain-site :initarg :site :db-kind :join
-	       :db-info (:join-class site
-				     :home-key site-oid
-				     :foreign-key oid
-				     :retrieval :deferred
-				     :set t))))
+   (site :accessor subdomain-site :initarg :site :db-kind :join
+	 :db-info (:join-class site
+			       :home-key site-oid
+			       :foreign-key oid
+			       :retrieval :deferred
+			       :set t))))
 
 (define-persistent-class site (oid-mixin)
   ((name :reader site-name :initarg :name :type text :db-kind :base :db-constraints (:not-null :unique))
