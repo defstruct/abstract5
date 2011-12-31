@@ -1,4 +1,4 @@
-;;;;   -*- Mode: lisp; Package: cl-user; Syntax: Common-lisp -*-
+;;;;   -*- Mode: lisp; Package: abstract5; Syntax: Common-lisp; encoding: utf-8; -*-
 ;;
 ;; Copyright (C) 2011 Jong-won Choi
 ;; All rights reserved.
@@ -35,34 +35,23 @@
 ;;
 ;;;; Code:
 
-(in-package :cl-user)
+(in-package :abstract5)
 
-(defpackage :abstract5-asd
-  (:use :cl :asdf))
-
-(in-package :abstract5-asd)
-
-(defconstant +abstract5-version+ "$Revision$"
+(defconstant +classes-test-version+ "$Revision$"
   "$Id$
    Report bugs to: jongwon.choi@defstruct.com")
 
-(defsystem :abstract5
-  :name "abstract5"
-  :author "Jong-won Choi <jongwon.choi@defstruct.com>"
-  :maintainer "Jong-won Choi <jongwon.choi@defstruct.com>"
-  :license "BSD-style - http://www.opensource.org/licenses/bsd-license.php"
-  :serial t
-  :description "Concrete5 like CMS with better quality"
-;;  :long-description ""
-  :version +abstract5-version+
-  :depends-on (:hunchentoot :clsql :clsql-postgresql-socket :html-template)
-  :pathname "src/"
-  :components ((:file "package")
-               (:file "utils")
-	       (:file "3rd-party-patch")
-	       (:file "database")
-	       (:file "specials")
-	       (:file "classes")
-	       (:file "abstract5")))
-
-;;; ABSTRACT5.ASD ends here
+(let* ((site (make-db-instance 'site :name "Test localhost" :description "test site"))
+       (subdomain (make-db-instance 'subdomain :name "localhost" :site site))
+       (admin (make-db-instance 'admin :name "Jong-won Choi" :site site)))
+  (list site subdomain admin))
+;;(trace (:method iNITIALIZE-INSTANCE :AROUND (CLSQL-SYS::VIEW-CLASS-DIRECT-SLOT-DEFINITION)))
+#|
+drop table admin;
+drop table oid_mixin ;
+drop table site      ;
+drop table subdomain ;
+drop sequence oid_seq    ;
+(delete-schema "\"Test localhost\"")
+|#
+;;; CLASSES-TEST.LISP ends here

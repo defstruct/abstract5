@@ -37,7 +37,7 @@
 
 (in-package :abstract5)
 
-(defconstant +class-version+ "$Revision$"
+(defconstant +classes-version+ "$Revision$"
   "$Id$
    Report bugs to: jongwon.choi@defstruct.com")
 
@@ -52,10 +52,7 @@
 (defun init-postgresql ()
   (unless (sequence-exists-p [oid-seq])
     (create-sequence [oid-seq]))
-
-  (dolist (class *global-class-tables-in-db*)
-    (unless (table-exists-p class)
-      (create-view-from-class class))))
+  (create-view-from-classes *global-class-tables-in-db*))
 
 (defun fix-oid-autoincrement (class-name)
   (let ((oid-seq "oid_seq")
@@ -125,7 +122,9 @@
     (customize-instance! object)
     (with-transaction ()
       (update-records-from-instance object))
-    (find-persistent-object name (oid object))))
+    (if (typep object 'oid-mixin)
+	(find-persistent-object name (oid object))
+	object)))
 
 ;;;
 ;;; SUBDOMAIN
@@ -192,14 +191,91 @@
 				      :set t))))
 
 (defmethod customize-instance! ((self site))
-  (let ((site-name (site-name self)))
-    (setf (site-db-schema self) (format nil "\"~A\"" site-name)
-	  (site-home-folder self) (ensure-site-home-folder site-name))))
+  (let* ((site-name (site-name self))
+	 (schema (format nil "\"~A\"" site-name)))
+    (setf (site-db-schema self) schema
+	  (site-home-folder self) (ensure-site-home-folder site-name))
+    ;; TODO: copy files into folders
+    (with-transaction ()
+      (create-schema schema)
+      (with-appending-schema (schema)
+	;; TODO: create tables
+	(create-view-from-classes *schema-class-tables-in-db*)
+	;; custom indexes
+	(create-index [idx-unique-uri] :on [uri-handler] :attributes '([uri-path] [uri-filename]))
+	(create-default-uri-handlers)))))
 
 (defun find-site-from-subdomain-name (name)
   (find-persistent-object 'site
 			  (site-oid (first (select 'subdomain :where [= [name] name] :flatp t)))))
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;
+;; Schema namespace classes
+;;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defparameter *schema-class-tables-in-db* nil)
+
+(defmacro define-schema-class (name (&rest super-classes) &body body)
+ `(prog1
+      (def-view-class ,name (,@super-classes)
+	,@body)
+    (fix-oid-autoincrement ',name)
+    (pushnew ',name *schema-class-tables-in-db*)))
+
+;;;
+;;; URI and handler table
+;;;
+(define-schema-class uri-handler ()
+  ((uri-path		:accessor uri-handler-uri-path
+			:initarg :uri-path
+			:type text
+			:db-kind :base
+			:db-constraints (:not-null))
+   (uri-filename	:accessor uri-handler-uri-filename
+			:initarg :uri-filename
+			:initform nil
+			:type text
+			:db-kind :base)
+   (fs-path		:accessor uri-handler-fs-path
+			:initarg :fs-path
+			:type text
+			:db-kind :base
+			:db-constraints (:not-null))
+   (fs-filename		:accessor uri-handler-fs-filename
+			:initarg :fs-filename
+			:initform nil
+			:type text
+			:db-kind :base)
+   (name		:accessor uri-handler-name
+			:initarg :name
+			:type text
+			:db-kind :base)))
+
+(defparameter *default-uri-handlers*
+  '(("/js/"		"/js/")
+    ("/css/"		"/css/")
+    ("/images/"		"/images/")
+    ("/favicon.ico"	"/images/favicon.ico")
+    ("/robots.txt"	"/etc/robots.txt")))
+
+(defun create-default-uri-handlers ()
+  (loop for (uri fs) in *default-uri-handlers*
+     as (uri-path uri-filename) = (split-path&name uri)
+     and (fs-path fs-filename) = (split-path&name fs)
+     do (cond ((and uri-filename fs-filename)
+	       ;; file
+	       (make-db-instance 'uri-handler
+				 :uri-path uri-path :uri-filename uri-filename
+				 :fs-path fs-path   :fs-filename fs-filename
+				 :name "ABSTRACT5::STATIC-FILE-HANDLER"))
+	      ((and (null uri-filename) (null fs-filename))
+	       ;; folder
+	       (make-db-instance 'uri-handler
+				 :uri-path uri-path
+				 :fs-path fs-path
+				 :name "ABSTRACT5::STATIC-FOLDER-HANDLER"))
+	      (t (error "Programming error - invalid spec!")))))
 
 #|
 (init-postgresql)
@@ -226,4 +302,4 @@
 
 #.(clsql-sys:locally-disable-sql-reader-syntax)
 
-;;; CLASS.LISP ends here
+;;; CLASSES.LISP ends here

@@ -37,20 +37,49 @@
 
 (in-package :abstract5)
 
-(defconstant +class-test-version+ "$Revision$"
+(defconstant +database-version+ "$Revision$"
   "$Id$
    Report bugs to: jongwon.choi@defstruct.com")
 
-(let* ((site (make-db-instance 'site :name "Test localhost" :description "test site"))
-       (subdomain (make-db-instance 'subdomain :name "localhost" :site site))
-       (admin (make-db-instance 'admin :name "Jong-won Choi" :site site)))
-  (list site subdomain admin))
-;;(trace (:method iNITIALIZE-INSTANCE :AROUND (CLSQL-SYS::VIEW-CLASS-DIRECT-SLOT-DEFINITION)))
-#|
-drop table admin;
-drop table oid_mixin ;
-drop table site      ;
-drop table subdomain ;
-drop sequence oid_seq    ;
-|#
-;;; CLASS-TEST.LISP ends here
+(defvar *current-db-schema*)
+(defmacro on-schema ((schema) &body body)
+  `(let ((*current-db-schema* (current-db-schema)))
+     (set-search-path ,schema)
+     (unwind-protect (progn ,@body)
+       (set-search-path *current-db-schema*))))
+
+(defmacro with-appending-schema ((schema) &body body)
+  `(let ((*current-db-schema* (current-db-schema)))
+     (append-search-path ,schema)
+     (unwind-protect (progn ,@body)
+       (set-search-path *current-db-schema*))))
+
+(defun current-db-schema ()
+  (first (clsql:query "select current_schema()" :flatp t)))
+
+(defun set-search-path (name)
+  (clsql:execute-command (format nil "SET search_path TO ~A" name)))
+
+(defun append-search-path (name)
+  (clsql:execute-command (format nil "SET search_path TO ~A,~A" name *current-db-schema*)))
+
+(defun create-schema (name)
+  (clsql:execute-command (format nil "CREATE SCHEMA ~A" name)))
+
+(defun schema-exists-p (schema-name)
+  (and (clsql:query (format nil "select nspname from pg_catalog.pg_namespace where nspname='~A'" schema-name))
+       t))
+
+(defun delete-schema (schema-name &key if-exists)
+  (clsql:execute-command (format nil "DROP SCHEMA~:[~; IF EXISTS~] ~A CASCADE"
+			       if-exists
+                               schema-name)))
+
+;;;
+
+(defun create-view-from-classes (class-list)
+  (dolist (class class-list)
+    (unless (table-exists-p class)
+      (create-view-from-class class))))
+
+;;; DATABASE.LISP ends here

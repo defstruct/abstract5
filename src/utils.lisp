@@ -110,4 +110,11 @@
   (when str
     (string-trim +whitespace-characters+ str)))
 
+(defun split-path&name (pathname)
+  (assert (char= (aref pathname 0) #\/))
+  (let ((end/ (position #\/ pathname :from-end t :test #'char=)))
+    `(,(subseq pathname 0 (incf end/)) ,(when (> (length pathname) end/)
+					      (subseq pathname end/)))))
+
+
 ;;; UTILS.LISP ends here

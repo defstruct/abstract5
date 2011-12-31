@@ -58,9 +58,14 @@
 ;; FIXME: with-mvc-site-env bind *mvc-site*
 (defvar *mvc-site*)
 
+(defun mvc-message-map (arg)
+  (declare (ignore arg))
+  "FIXME")
+
 (defun get-mvc-message (&rest keys)
   "Get the message with given keys under *mvc-site*"
   (let ((message (or (gethash (mvc-message-map *mvc-site*) keys)
+
 		     (gethash (mvc-message-map *root-site*) keys))))
     (unless message
       (error "Programming Error! GET-MVC-MESSAGE does not have the entry for ~S" keys))
