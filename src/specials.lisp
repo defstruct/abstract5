@@ -1,4 +1,4 @@
-;;;;   -*- Mode: lisp; Package: cl-user; Syntax: Common-lisp -*-
+;;;;   -*- Mode: lisp; Package: abstract5; Syntax: Common-lisp; encoding: utf-8; -*-
 ;;
 ;; Copyright (C) 2011 Jong-won Choi
 ;; All rights reserved.
@@ -35,33 +35,46 @@
 ;;
 ;;;; Code:
 
-(in-package :cl-user)
+(in-package :abstract5)
 
-(defpackage :abstract5-asd
-  (:use :cl :asdf))
-
-(in-package :abstract5-asd)
-
-(defconstant +abstract5-version+ "$Revision$"
+(defconstant +specials-version+ "$Revision$"
   "$Id$
    Report bugs to: jongwon.choi@defstruct.com")
 
-(defsystem :abstract5
-  :name "abstract5"
-  :author "Jong-won Choi <jongwon.choi@defstruct.com>"
-  :maintainer "Jong-won Choi <jongwon.choi@defstruct.com>"
-  :license "BSD-style - http://www.opensource.org/licenses/bsd-license.php"
-  :serial t
-  :description "Concrete5 like CMS with better quality"
-;;  :long-description ""
-  :version +abstract5-version+
-  :depends-on (:hunchentoot :clsql :clsql-postgresql-socket :html-template)
-  :pathname "src/"
-  :components ((:file "package")
-               (:file "utils")
-	       (:file "3rd-party-patch")
-	       (:file "specials")
-	       (:file "class")
-	       (:file "abstract5")))
+(defparameter *abstract5-home-dir* (directory-namestring (merge-pathnames "../" *load-pathname*))
+  "Pathname for the 'abstract5/site-instances/defstruct'")
 
-;;; ABSTRACT5.ASD ends here
+(defun get-config-parameters (def keys)
+  (mapcar (lambda (key)
+	    (getf def key))
+	  keys))
+
+(defparameter *site-sub-folders*
+  ;; FIXME: not finalised yet
+  (mapcar #'(lambda (dir)
+	      (make-pathname :directory `(:relative ,dir)))
+	  '("packages" "themes")))
+
+(defun ensure-site-sub-folders (site-home)
+  (dolist (path *site-sub-folders*)
+    (ensure-directories-exist (merge-pathnames path site-home))))
+
+(defun ensure-site-home-folder (site-name)
+  (let ((home (merge-pathnames (make-pathname :directory  (format nil "~(~A~)/" site-name))
+			       *abstract5-home-dir*)))
+    (ensure-site-sub-folders home)
+    (namestring home)))
+
+;;; Dynamic variables for site namespace
+(defvar *site-database-schema*)
+(defvar *site-home-dir*)
+
+(defmacro with-site-context ((domain) &body body)
+  (let ((site (gensym "site")))
+    `(let ((,site (find-site-from-subdomain-name ,domain)))
+       (let ((*site-database-schema* (site-db-schema ,site))
+	     (*site-home-dir*	     (site-home-folder ,site)))
+	 (progn
+	   ,@body)))))
+
+;;; SPECIALS.LISP ends here

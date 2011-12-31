@@ -74,8 +74,14 @@
     (fix-oid-autoincrement ',name)
     (pushnew ',name *global-class-tables-in-db*)))
 
+;;;
+;;; OID-MIXIN
+;;;
 (define-persistent-class oid-mixin ()
   ((oid :reader oid :db-kind :key :type integer :db-constraints (:not-null :auto-increment))))
+
+(defgeneric customize-instance! (object)
+  (:method (object) (declare (ignore object))))
 
 (defmethod print-object ((self oid-mixin) stream)
   (print-unreadable-object (self stream :type t :identity t)
@@ -109,8 +115,23 @@
 	      (setf (slot-value instance join-id-slot-name)
 		    (oid join-value)))))))))
 
+(defun find-persistent-object (name oid &key refresh)
+  (first (select name :where [= [oid] oid] :flatp t :refresh refresh)))
+
+(defun make-db-instance (name &rest args)
+  ;; NB: update-records-from-instance return primary key.
+  ;; make all instances have oid
+  (let ((object (apply #'make-instance name args)))
+    (customize-instance! object)
+    (with-transaction ()
+      (update-records-from-instance object))
+    (find-persistent-object name (oid object))))
+
+;;;
+;;; SUBDOMAIN
+;;;
 (define-persistent-class subdomain (oid-mixin)
-  ((name :reader site-name :initarg :name :type text :db-kind :base :db-constraints (:not-null :unique))
+  ((name :reader subdomain-name :initarg :name :type text :db-kind :base :db-constraints (:not-null :unique))
    (site-oid :accessor site-oid :initarg :site-oid :type integer :db-kind :base)
    (site :accessor subdomain-site :initarg :site :db-kind :join
 	 :db-info (:join-class site
@@ -119,43 +140,66 @@
 			       :retrieval :deferred
 			       :set t))))
 
+;;;
+;;; ADMIN
+;;;
 (define-persistent-class admin (oid-mixin)
   ((name :accessor admin-name :initarg :name :type text :db-kind :base)
    ;; email, phone, address, etc
    (site-oid :reader site-oid :type integer :db-kind :base)
-   (site :accessor subdomain-site :initarg :site :db-kind :join
+   (site :accessor admin-site :initarg :site :db-kind :join
 	 :db-info (:join-class site
 			       :home-key site-oid
 			       :foreign-key oid
 			       :retrieval :deferred
 			       :set t))))
 
+;;;
+;;; SITE
+;;;
 (define-persistent-class site (oid-mixin)
-  ((name :reader site-name :initarg :name :type text :db-kind :base :db-constraints (:not-null :unique))
-   (description :accessor site-description :initarg :description :type text :db-kind :base)
-   (subdomains :accessor site-subdomains :db-kind :join
-	       :db-info (:join-class subdomain
+  ((name	:reader site-name
+		:initarg :name
+		:type text
+		:db-kind :base
+		:db-constraints (:not-null :unique))
+   ;; FIXME: add more
+   (description :accessor site-description
+		:initarg :description
+		:type text
+		:db-kind :base)
+   (home-folder :accessor site-home-folder
+		:initarg :home-folder
+		:type text
+		:db-kind :base)
+   (db-schema	:accessor site-db-schema
+		:type text
+		:db-kind :base
+		:db-constraints (:not-null))
+   (subdomains	:accessor site-subdomains
+		:db-kind :join
+		:db-info (:join-class subdomain
 				     :home-key oid
 				     :foreign-key site-oid
 				     :retrieval :deferred
 				     :set t))
-   (admins :accessor site-admins :db-kind :join
-	   :db-info (:join-class admin
-				 :home-key oid
-				 :foreign-key site-oid
-				 :retrieval :deferred
-				 :set t))))
+   (admins	:accessor site-admins
+		:db-kind :join
+		:db-info (:join-class admin
+				      :home-key oid
+				      :foreign-key site-oid
+				      :retrieval :deferred
+				      :set t))))
 
-(defun find-persistent-object (name oid &key refresh)
-  (first (select name :where [= [oid] oid] :flatp t :refresh refresh)))
+(defmethod customize-instance! ((self site))
+  (let ((site-name (site-name self)))
+    (setf (site-db-schema self) (format nil "\"~A\"" site-name)
+	  (site-home-folder self) (ensure-site-home-folder site-name))))
 
-(defun make-db-instance (name &rest args)
-  ;; NB: update-records-from-instance return primary key.
-  ;; make all instances have oid
-  (let ((object (apply #'make-instance name args)))
-    (with-transaction ()
-      (update-records-from-instance object))
-    (find-persistent-object name (oid object))))
+(defun find-site-from-subdomain-name (name)
+  (find-persistent-object 'site
+			  (site-oid (first (select 'subdomain :where [= [name] name] :flatp t)))))
+
 
 #|
 (init-postgresql)

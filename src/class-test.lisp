@@ -51,10 +51,6 @@ drop table admin;
 drop table oid_mixin ;
 drop table site      ;
 drop table subdomain ;
-drop sequence admin_oid_seq    ;
 drop sequence oid_seq    ;
-drop sequence oid_mixin_oid_seq;
-drop sequence site_oid_seq     ;
-drop sequence subdomain_oid_seq;
 |#
 ;;; CLASS-TEST.LISP ends here

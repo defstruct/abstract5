@@ -41,73 +41,6 @@
   "$Id$
    Report bugs to: jongwon.choi@defstrutc.com")
 
-(defparameter *abstract5-home-dir* (directory-namestring (merge-pathnames "../" *load-pathname*))
-  "Pathname for the 'abstract5/site-instances/defstruct'")
-
-;;;
-;;; Multi-site support
-;;;
-(defparameter *multi-site-instances* ()
-  "List of all multi-site instances. Used in dispatching reqeust, selecting DB schema, choosing site home, etc")
-
-(defstruct abstract5-site
-  (:name	nil	:type symbol)
-  (:domains	()	:type list)
-  (:db-schema	""	:type string)
-  (:home	#P""	:type pathname))
-
-(defun get-config-parameters (def keys)
-  (mapcar (lambda (key)
-	    (getf def key))
-	  keys))
-
-(defparameter *site-paths*
-  ;; FIXME: not finalised yet
-  (mapcar #'(lambda (dir)
-	      (make-pathname :directory `(:relative ,dir)))
-	  '("packages" "themes")))
-
-(defun ensure-site-directories-exist (site-home)
-  (dolist (path *site-paths*)
-    (ensure-directories-exist (merge-pathnames path site-home))))
-
-(defun make-site-instance (site-def)
-  (destructuring-bind (name domains)
-      (get-config-parameters site-def '(:name :domains))
-    (assert (symbolp name) () "Given name ~S is not a symbol" name)
-    (assert (and (listp domains) (every #'stringp domains))
-	    ()
-	    "Given domains ~S must be list of strings" domains)
-    #+FIXME
-    (assert (not (find name *multi-site-instances* :key #'abstract5-site-name))
-	    ()
-	    "Site ~S exists" name)
-
-    ;; qouted schema name to avoid invalid DB names
-    (let ((db-schema (format nil "\"~A\"" name))
-	  (home (merge-pathnames (make-pathname :directory  (format nil "~(~A~)/" name))
-				   *abstract5-home-dir*)))
-      (ensure-site-directories-exist home)
-
-      (make-abstract5-site :name name :domains domains :db-schema db-schema :home home))))
-
-(defun build-multi-site-instances (site-defs)
-  (setf *multi-site-instances* (mapcar #'make-site-instance site-defs)))
-
-;;; Dynamic variables for site namespace
-(defvar *site-database-schema*)
-(defvar *site-home-dir*)
-
-(defmacro with-site-context ((domain) &body body)
-  (let ((site (gensym "site")))
-    `(let ((,site (find ,domain *multi-site-instances*
-			:key #'abstract5-site-domains
-			:test (curry-right #'member :test #'string=))))
-       (let ((*site-database-schema* (abstract5-site-db-schema ,site))
-	     (*site-home-dir*	     (abstract5-site-home ,site)))
-	 (progn
-	   ,@body)))))
-
 ;;;
 ;;; MVC functions/generic functions
 ;;;
@@ -125,7 +58,6 @@
 ;; FIXME: with-mvc-site-env bind *mvc-site*
 (defvar *mvc-site*)
 
-#+FIXME
 (defun get-mvc-message (&rest keys)
   "Get the message with given keys under *mvc-site*"
   (let ((message (or (gethash (mvc-message-map *mvc-site*) keys)
@@ -161,10 +93,10 @@
     :theme-css-files ((:css-file "ccm.default.theme.css"))
 	      ;; no :extra-header
     :mvc-errors (get-mvc-errors)))
-#+FIXME
+
 (defun get-global-environment ()
   `(:html-lang ,(get-site-html-lang)))
-#+FIXME
+
 (defmacro with-mvc-site-env ((mvc) &body body)
   `(let ((*database* (switch-db-schema "FIXME"))
 	 (*mvc-errors* ())
@@ -186,7 +118,6 @@
    "Return HTML view of MVC after applying ENV. MVC-KEY is the method specializer")
   (:method (mvc-key mvc env)
     (declare (ignore mvc-key))
-    #+FIXME
     (html-template:fill-and-print-template (view-template-printer mvc) env :stream *html-output-stream*)))
 
 ;;;
@@ -217,10 +148,10 @@
 (defun parse-abstract5-uri (domain-name uri)
   )
 
-(defun request->db-schema-name (http-request)
+(defun request->subdomain (http-request)
   (let ((host-name (hunchentoot:host http-request)))
-    (subseq host-name 0 (min (position #\. host-name)
-			     (position #\: host-name)))))
+    (subseq host-name 0 (or (position #\. host-name)
+			    (position #\: host-name)))))
 
 (defun http-request-handler (request)
   (print `(remote-addr ,(hunchentoot:remote-addr request)
@@ -232,10 +163,10 @@
 		       real-remote-addr ,(hunchentoot:real-remote-addr request)
 		       user-agent ,(hunchentoot:user-agent )
 		       ))
-  (with-site-context ((request->db-schema-name request))
+  (with-site-context ((request->subdomain request))
+    ;;(print `(,*site-database-schema* ,*site-home-dir*))
     ;; check maintenance?
     ;; ...
-    #+FIXME
     (let ((domain-name (hunchentoot:host request)))
       (multiple-value-bind (mvc operation operands)
 	  ;; FIXME: define 404 mvc, Error mvc, etc
@@ -278,10 +209,5 @@
 (defun list-request-dispatcher (request)
   (abstract5::http-request-handler request))
 
+
 ;;; ABSTRACT5.LISP ends here
-#|
-
-(build-multi-site-instances '((:name :domains :db-schema :home)))
-|#
-
-;(clsql:def-view-class
