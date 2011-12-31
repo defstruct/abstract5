@@ -69,12 +69,37 @@
 (defvar *site-database-schema*)
 (defvar *site-home-dir*)
 
+;;; FIXME: refactor code into files
+(defun current-db-schema ()
+  (first (clsql:query "select current_schema()" :flatp t)))
+
+(defun set-db-schema (name)
+  (clsql:execute-command (format nil "SET search_path TO ~A" name)))
+
+(defun create-schema (name)
+  (clsql:execute-command (format nil "CREATE SCHEMA ~A" name)))
+
+(defun schema-exists-p (schema-name)
+  (and (clsql:query (format nil "select nspname from pg_catalog.pg_namespace where nspname='~A'" schema-name))
+       t))
+
+(defun delete-schema (schema-name &key if-exists)
+  (clsql:execute-command (format nil "DROP SCHEMA~:[~; IF EXISTS~] ~A CASCADE"
+			       if-exists
+                               schema-name)))
+
+(defmacro on-schema ((schema) &body body)
+  `(let ((current-db-schema (current-db-schema)))
+     (set-db-schema ,schema)
+     (unwind-protect (progn @,body)
+       (set-db-schema current-db-schema))))
+
 (defmacro with-site-context ((domain) &body body)
   (let ((site (gensym "site")))
     `(let ((,site (find-site-from-subdomain-name ,domain)))
-       (let ((*site-database-schema* (site-db-schema ,site))
-	     (*site-home-dir*	     (site-home-folder ,site)))
-	 (progn
-	   ,@body)))))
+       (on-schema (site-db-schema ,site)
+	 (let ((*site-home-dir*	     (site-home-folder ,site)))
+	   (progn
+	     ,@body))))))
 
 ;;; SPECIALS.LISP ends here
