@@ -39,7 +39,7 @@
 
 (defpackage "ABSTRACT5"
 ;;  (:nicknames "DEFSTRUCT")
-  (:use :cl :hunchentoot :hunchentoot :clsql)
+  (:use :common-lisp :hunchentoot :clsql #+openmcl #:openmcl-mop)
   (:import-from :abstract5-asd :+abstract5-version+))
 
 (in-package :abstract5)

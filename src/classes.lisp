@@ -58,7 +58,7 @@
   (let ((oid-seq "oid_seq")
 	(class (find-class class-name)))
     (flet ((maybe-set-oid-seq (slots)
-	     (bind-when (oid-slot (find 'oid slots :key #'ccl:slot-definition-name))
+	     (bind-when (oid-slot (find 'oid slots :key #'slot-definition-name))
 	       (setf (clsql-sys::view-class-slot-autoincrement-sequence oid-slot) oid-seq))))
       ;; NB: CLSQL uses two different kind of slots (not sure why)
       (maybe-set-oid-seq (clsql-sys::ordered-class-slots class))
@@ -98,7 +98,7 @@
   ;; and the join slot has value.
   (let ((all-slots (clsql-sys::ordered-class-slots (class-of instance))))
     (dolist (slot all-slots)
-      (let ((slot-name (ccl:slot-definition-name slot)))
+      (let ((slot-name (slot-definition-name slot)))
 	(bind-when (join-value (and (typep instance 'oid-mixin)
 				    (eq (clsql-sys::view-class-slot-db-kind slot) :join)
 				    (slot-boundp instance slot-name)
@@ -191,6 +191,7 @@
 				      :set t))))
 
 (defmethod customize-instance! ((self site))
+  (declare (special *schema-class-tables-in-db*))
   (let* ((site-name (site-name self))
 	 (schema (format nil "\"~A\"" site-name)))
     (setf (site-db-schema self) schema
