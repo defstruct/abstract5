@@ -47,6 +47,14 @@
   (list site subdomain admin))
 ;;(trace (:method iNITIALIZE-INSTANCE :AROUND (CLSQL-SYS::VIEW-CLASS-DIRECT-SLOT-DEFINITION)))
 #|
+(asdf:load-system :abstract5)
+(in-package :abstract5)
+(main)
+(init-postgresql)
+(trace APPEND-SEARCH-PATH SET-SEARCH-PATH CURRENT-DB-SCHEMA SELECT FIND-PERSISTENT-OBJECT)
+(enable-sql-reader-syntax)
+(start-sql-recording)
+
 drop table admin;
 drop table oid_mixin ;
 drop table site      ;
