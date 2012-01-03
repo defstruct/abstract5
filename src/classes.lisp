@@ -52,7 +52,8 @@
 (defun init-postgresql ()
   (unless (sequence-exists-p [oid-seq])
     (create-sequence [oid-seq]))
-  (create-view-from-classes *global-class-tables-in-db*))
+  (create-view-from-classes *global-class-tables-in-db*)
+  (create-stored-procedures *common-stored-procedures*))
 
 (defun fix-oid-autoincrement (class-name)
   (let ((oid-seq "oid_seq")
@@ -214,9 +215,10 @@
     ;; TODO: copy files into folders
     (with-transaction ()
       (create-schema schema)
-      (with-appending-schema (schema)
+      (on-schema (schema)
 	;; TODO: create tables
 	(create-view-from-classes *schema-class-tables-in-db*)
+	(create-stored-procedures *common-stored-procedures*)
 	;; custom indexes
 	(create-index [idx-unique-uri] :on [uri-handler] :attributes '([uri-path] [uri-filename]))
 	(create-default-uri-handlers)))))

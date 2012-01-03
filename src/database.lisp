@@ -43,14 +43,12 @@
 
 (defvar *current-db-schema*)
 (defmacro on-schema ((schema) &body body)
-  `(let ((*current-db-schema* (current-db-schema)))
-     (set-search-path ,schema)
+  `(let ((*current-db-schema* (exec-stored-function :new_schema_and_get_prev_schema ,schema)))
      (unwind-protect (progn ,@body)
        (set-search-path *current-db-schema*))))
 
 (defmacro with-appending-schema ((schema) &body body)
-  `(let ((*current-db-schema* (current-db-schema)))
-     (append-search-path ,schema)
+  `(let ((*current-db-schema* (exec-stored-function :new_schema_and_get_prev_schema ,schema)))
      (unwind-protect (progn ,@body)
        (set-search-path *current-db-schema*))))
 
@@ -81,5 +79,30 @@
   (dolist (class class-list)
     (unless (table-exists-p class)
       (create-view-from-class class))))
+
+(defun exec-stored-function (fn-name &rest args)
+  (caar
+   (clsql:query (format nil "select ~A(~{~A~^, ~})"
+			fn-name (mapcar #'clsql:sql args)))))
+
+
+(defun create-stored-procedures (list)
+  ;; FIXME: check existence
+  (dolist (stored-procedure list)
+    (clsql:execute-command stored-procedure)))
+
+(defparameter *common-stored-procedures*
+  '("CREATE OR REPLACE FUNCTION new_schema_and_get_prev_schema(TEXT)
+RETURNS TEXT
+AS $$
+   DECLARE
+      the_new_schema alias for $1;
+      the_old_schema TEXT;
+BEGIN
+	select current_schema() into the_old_schema;
+	execute	'set search_path to ' || the_new_schema;
+        RETURN the_old_schema;
+END;$$
+LANGUAGE plpgsql;"))
 
 ;;; DATABASE.LISP ends here
