@@ -41,6 +41,25 @@
   "$Id$
    Report bugs to: jongwon.choi@defstruct.com")
 
+
+;;;
+;;; Errors, conditions
+;;;
+(define-condition mvc-error ()
+  ((message :type string :initarg :message :reader mvc-error-message)))
+
+(defvar *mvc-errors*) ;; used to accumulate error messages
+(defun push-mvc-error (error-message)
+  (push error-message *mvc-errors*))
+(defun get-mvc-errors ()
+  (reverse *mvc-errors*))
+
+(define-condition site-not-found ()
+  ((domain :type string :initarg :domain :reader site-not-found-domain))
+  (:report (lambda (condition stream)
+              (format stream "Matching site not found: ~S"
+                      (site-not-found-domain condition)))))
+
 (defparameter *abstract5-home-dir* (directory-namestring (merge-pathnames "../" *load-pathname*))
   "Pathname for the 'abstract5/site-instances/defstruct'")
 
@@ -70,14 +89,45 @@
 (defvar *selected-site*)
 
 (defmacro with-site-context ((domain) &body body)
-  `(let ((*selected-site* (find-site-from-subdomain-name ,domain)))
-     (on-schema ((site-db-schema *selected-site*))
-       ,@body)))
+  `(bind-if (*selected-site* (find-site-from-subdomain-name ,domain))
+	    (on-schema ((site-db-schema *selected-site*))
+	      ,@body)
+	    (error 'site-not-found :domain domain)))
 
 (defmacro using-public-db-cache (&body body)
   ;; This only works with cached object.
   ;; Because of ON-SCHEMA, non-chached object query will fail.
-  `(let ((*selected-site* nil))
+  `(let ((*selected-site* *selected-site*))
+     (makunbound '*selected-site*)
      ,@body))
+
+(defun insert-assertion (fn-body assertion)
+  (flet ((doc-or-type-decl? (elem)
+	   (or (stringp elem)
+	       (and (consp  elem)
+		    (eq (first elem) 'declare)))))
+    (let ((pos (position-if-not #'doc-or-type-decl? fn-body)))
+      (if (zerop pos)
+	  (cons assertion fn-body)
+	  (let ((assertion-list (list assertion)))
+	    (setf (cdr assertion-list) (nthcdr pos fn-body))
+	    (setf (nthcdr pos fn-body) assertion-list)
+	    fn-body)))))
+
+(defmacro site-function (spec args &body body)
+  `(defun ,spec ,args
+     ,@(insert-assertion body '(assert *selected-site*))))
+
+(defmacro site-method (spec args &body body)
+  `(defmethod ,spec ,args
+     ,@(insert-assertion body '(assert *selected-site*))))
+
+(defmacro global-function (spec args &body body)
+  `(defun ,spec ,args
+     ,@(insert-assertion body '(assert (not (boundp '*selected-site*))))))
+
+(defmacro global-method (spec args &body body)
+  `(defmethod ,spec ,args
+     ,@(insert-assertion body '(assert (not (boundp '*selected-site*))))))
 
 ;;; SPECIALS.LISP ends here

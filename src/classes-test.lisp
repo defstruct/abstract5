@@ -51,7 +51,7 @@
 (in-package :abstract5)
 (main)
 (init-postgresql)
-(trace example-uri-handler-query APPEND-SEARCH-PATH SET-SEARCH-PATH CURRENT-DB-SCHEMA SELECT FIND-PERSISTENT-OBJECT)
+(trace find-uri-handler APPEND-SEARCH-PATH SET-SEARCH-PATH CURRENT-DB-SCHEMA SELECT FIND-PERSISTENT-OBJECT)
 (enable-sql-reader-syntax)
 
 (clsql:start-sql-recording)

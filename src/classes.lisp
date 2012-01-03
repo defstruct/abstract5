@@ -200,7 +200,7 @@
 (in-package :clsql-sys)
 
 (defmethod record-caches :around ((db database))
-  (if (and (boundp 'abstract5::*selected-site*) abstract5::*selected-site*)
+  (if (boundp 'abstract5::*selected-site*)
       (abstract5::site-record-caches abstract5::*selected-site*)
       (call-next-method)))
 
@@ -297,10 +297,13 @@
 				 :name "ABSTRACT5::STATIC-FOLDER-HANDLER"))
 	      (t (error "Programming error - invalid spec!")))))
 
-(defun example-uri-handler-query (uri)
-  (select 'uri-handler :where [like [slot-value 'uri-handler 'uri-path]
-	  (format nil "~A%" (first (split-path&name uri)))]
-	  :flatp t))
+(site-function find-uri-handler (uri)
+  (destructuring-bind (path filename)
+      (split-path&name uri)
+    (select 'uri-handler :where [and [= [slot-value 'uri-handler 'uri-path] path]
+	                             [or [= [slot-value 'uri-handler 'uri-filename] filename]
+				         [null [slot-value 'uri-handler 'uri-filename]]]]
+	    :flatp t)))
 
 #|
 (init-postgresql)

@@ -44,17 +44,6 @@
 ;;;
 ;;; MVC functions/generic functions
 ;;;
-;; FIXME: with-mvc-site-env bind *mvc-errors*
-
-(define-condition mvc-error ()
-  ((message :type string :initarg :message :initform "" :reader mvc-error-message)))
-
-(defvar *mvc-errors*) ;; used to accumulate error messages
-(defun push-mvc-error (error-message)
-  (push error-message *mvc-errors*))
-(defun get-mvc-errors ()
-  (reverse *mvc-errors*))
-
 ;; FIXME: with-mvc-site-env bind *mvc-site*
 (defvar *mvc-site*)
 
@@ -169,7 +158,10 @@
 		       user-agent ,(hunchentoot:user-agent )
 		       ))
   (with-site-context ((request->subdomain request))
-    (example-uri-handler-query (hunchentoot:script-name request))
+    (let ((uri-handlers (find-uri-handler (hunchentoot:script-name request))))
+      (print (mapcar #'(lambda (obj)
+			 `(,(uri-handler-uri-path obj) ,(uri-handler-uri-filename obj)))
+		     uri-handlers)))
     ;;(print `(,*site-database-schema* ,*site-home-dir*))
     ;; check maintenance?
     ;; ...
