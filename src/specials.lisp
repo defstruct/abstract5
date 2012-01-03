@@ -67,15 +67,17 @@
 
 
 ;;; Dynamic variables for site namespace
-(defvar *site-database-schema*)
-(defvar *site-home-dir*)
+(defvar *selected-site*)
 
 (defmacro with-site-context ((domain) &body body)
-  (let ((site (gensym "site")))
-    `(let ((,site (find-site-from-subdomain-name ,domain)))
-       (on-schema ((site-db-schema ,site))
-	 (let ((*site-home-dir* (site-home-folder ,site)))
-	   (progn
-	     ,@body))))))
+  `(let ((*selected-site* (find-site-from-subdomain-name ,domain)))
+     (on-schema ((site-db-schema *selected-site*))
+       ,@body)))
+
+(defmacro using-public-db-cache (&body body)
+  ;; This only works with cached object.
+  ;; Because of ON-SCHEMA, non-chached object query will fail.
+  `(let ((*selected-site* nil))
+     ,@body))
 
 ;;; SPECIALS.LISP ends here

@@ -51,9 +51,10 @@
 (in-package :abstract5)
 (main)
 (init-postgresql)
-(trace APPEND-SEARCH-PATH SET-SEARCH-PATH CURRENT-DB-SCHEMA SELECT FIND-PERSISTENT-OBJECT)
+(trace example-uri-handler-query APPEND-SEARCH-PATH SET-SEARCH-PATH CURRENT-DB-SCHEMA SELECT FIND-PERSISTENT-OBJECT)
 (enable-sql-reader-syntax)
-(start-sql-recording)
+
+(clsql:start-sql-recording)
 
 drop table admin;
 drop table oid_mixin ;

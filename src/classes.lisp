@@ -199,7 +199,7 @@
 (in-package :clsql-sys)
 
 (defmethod record-caches :around ((db database))
-  (if (boundp 'abstract5::*selected-site*)
+  (if (and (boundp 'abstract5::*selected-site*) abstract5::*selected-site*)
       (abstract5::site-record-caches abstract5::*selected-site*)
       (call-next-method)))
 
@@ -222,9 +222,9 @@
 	(create-default-uri-handlers)))))
 
 (defun find-site-from-subdomain-name (name)
-  (with-global-context ()
+  (using-public-db-cache
     (find-persistent-object 'site
-			  (site-oid (first (select 'subdomain :where [= [name] name] :flatp t))))))
+			    (site-oid (first (select 'subdomain :where [= [name] name] :flatp t))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -294,6 +294,11 @@
 				 :fs-path fs-path
 				 :name "ABSTRACT5::STATIC-FOLDER-HANDLER"))
 	      (t (error "Programming error - invalid spec!")))))
+
+(defun example-uri-handler-query (uri)
+  (select 'uri-handler :where [like [slot-value 'uri-handler 'uri-path]
+	  (format nil "~A%" (first (split-path&name uri)))]
+	  :flatp t))
 
 #|
 (init-postgresql)

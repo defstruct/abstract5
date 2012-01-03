@@ -169,10 +169,7 @@
 		       user-agent ,(hunchentoot:user-agent )
 		       ))
   (with-site-context ((request->subdomain request))
-    #+xxx
-    (print (select 'uri-handler :where [like [slot-value 'uri-handler 'uri-path]
-		   (format nil "~A%" (first (split-path&name (hunchentoot:script-name request))))]
-		   :flatp t))
+    (example-uri-handler-query (hunchentoot:script-name request))
     ;;(print `(,*site-database-schema* ,*site-home-dir*))
     ;; check maintenance?
     ;; ...
