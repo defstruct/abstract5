@@ -82,4 +82,40 @@
     (unless (table-exists-p class)
       (create-view-from-class class))))
 
+
+(in-package :clsql-sys)
+;;
+;; OODML with schema
+;;
+(defvar *selected-site-establed* nil)
+
+(defmacro with-appending-abstract5-site-schema ((&optional schema) &body body)
+  (if schema
+      (progn
+	(assert (stringp schema))
+	`(abstract5::with-appending-schema (,schema)
+	   ,@body))
+      `(if (and (not *selected-site-establed*)
+		(boundp 'abstract5::*selected-site*)
+		abstract5::*selected-site*)
+	   (let ((*selected-site-establed* t))
+	     (abstract5::with-appending-schema ((abstract5::site-db-schema abstract5::*selected-site*))
+	       ,@body))
+	   (progn ,@body))))
+
+(defmacro wrap-clsql-fdmls-with-abstract5-schema (&rest fdmls)
+  `(progn
+     ,@(mapcar (lambda (fdml)
+		 `(ccl:advise ,fdml (with-appending-abstract5-site-schema ()
+				      (:do-it))
+			      :when :around :name ,(intern (format nil "~A-WITH-SCHEMA" fdml) :keyword)))
+	       fdmls)))
+#+XX
+(wrap-clsql-fdmls-with-abstract5-schema insert-records update-records delete-records
+					execute-command query print-query
+					;; loop do-query - These are macro
+					select map-query)
+
+
+;;(wrap-clsql-fdmls-with-abstract5-schema select)
 ;;; DATABASE.LISP ends here
