@@ -65,7 +65,7 @@
 (defun get-mvc-message (&rest keys)
   "Get the message with given keys under *mvc-site*"
   (let ((message (or (gethash (mvc-message-map *mvc-site*) keys)
-
+		     #+XXX
 		     (gethash (mvc-message-map *root-site*) keys))))
     (unless message
       (error "Programming Error! GET-MVC-MESSAGE does not have the entry for ~S" keys))
@@ -100,7 +100,7 @@
     :mvc-errors (get-mvc-errors)))
 
 (defun get-global-environment ()
-  `(:html-lang ,(get-site-html-lang)))
+  `(:html-lang #+FIXME ,(get-site-html-lang)))
 
 (defmacro with-mvc-site-env ((mvc) &body body)
   `(let ((*database* (switch-db-schema "FIXME"))
@@ -169,6 +169,10 @@
 		       user-agent ,(hunchentoot:user-agent )
 		       ))
   (with-site-context ((request->subdomain request))
+    #+xxx
+    (print (select 'uri-handler :where [like [slot-value 'uri-handler 'uri-path]
+		   (format nil "~A%" (first (split-path&name (hunchentoot:script-name request))))]
+		   :flatp t))
     ;;(print `(,*site-database-schema* ,*site-home-dir*))
     ;; check maintenance?
     ;; ...
