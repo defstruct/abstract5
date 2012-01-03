@@ -188,7 +188,22 @@
 				      :home-key oid
 				      :foreign-key site-oid
 				      :retrieval :deferred
-				      :set t))))
+				      :set t))
+   (record-caches :reader site-record-caches
+		  :initform (tg:make-weak-hash-table :test #'equal :weakness :value)
+		  :db-kind :virtual)))
+
+;;
+;; custom caches - patching the existing clsql-sys method
+;;
+(in-package :clsql-sys)
+
+(defmethod record-caches :around ((db database))
+  (if (boundp 'abstract5::*selected-site*)
+      (abstract5::site-record-caches abstract5::*selected-site*)
+      (call-next-method)))
+
+(in-package :abstract5)
 
 (defmethod customize-instance! ((self site))
   (declare (special *schema-class-tables-in-db*))
@@ -207,8 +222,9 @@
 	(create-default-uri-handlers)))))
 
 (defun find-site-from-subdomain-name (name)
-  (find-persistent-object 'site
-			  (site-oid (first (select 'subdomain :where [= [name] name] :flatp t)))))
+  (with-global-context ()
+    (find-persistent-object 'site
+			  (site-oid (first (select 'subdomain :where [= [name] name] :flatp t))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -257,6 +273,7 @@
   '(("/js/"		"/js/")
     ("/css/"		"/css/")
     ("/images/"		"/images/")
+    ("/html/"		"/html/")
     ("/favicon.ico"	"/images/favicon.ico")
     ("/robots.txt"	"/etc/robots.txt")))
 
