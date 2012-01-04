@@ -45,10 +45,10 @@
        (subdomain (make-db-instance 'subdomain :name "localhost" :site site))
        (admin (make-db-instance 'admin :name "Jong-won Choi" :site site)))
   (on-schema ((site-db-schema site))
-    (update-records-from-instance (make-db-instance 'site-request-handler
-						    :uri-path "page-not-found" :uri-filename "page-not-found"
-						    :fs-path "/html/"   :fs-filename "page-not-found.html"
-						    :fn-name "STATIC-FILE-HANDLER")))
+    (make-db-instance 'site-request-handler
+		      :uri-path "error-code" :uri-filename "404"
+		      :fs-path "/html/"   :fs-filename "page-not-found.html"
+		      :fn-name "STATIC-FILE-HANDLER"))
   (list site subdomain admin))
 
 
@@ -59,7 +59,7 @@
 (in-package :abstract5)
 (main)
 (init-postgresql)
-(trace find-uri-handler APPEND-SEARCH-PATH SET-SEARCH-PATH CURRENT-DB-SCHEMA SELECT FIND-PERSISTENT-OBJECT)
+(trace APPEND-SEARCH-PATH SET-SEARCH-PATH CURRENT-DB-SCHEMA SELECT FIND-PERSISTENT-OBJECT)
 (enable-sql-reader-syntax)
 
 (clsql:start-sql-recording)

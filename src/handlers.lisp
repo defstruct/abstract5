@@ -41,23 +41,68 @@
   "$Id$
    Report bugs to: jongwon.choi@defstruct.com")
 
-(defun static-file-handler (site-handler site filename)
-  (declare (ignore filename))
-  (let* ((filename (site-request-handler-fs-filename site-handler))
-	 (pathname (make-pathname :directory (format nil "~A~A" (site-home-folder site)
-						    (site-request-handler-fs-path site-handler))
+;;;
+;;; HTTP error return code handlers
+;;;
+(defun get-404-env ()
+  `(:uri ,(hunchentoot:request-uri*)))
+
+(defparameter *http-error-code->env-fn*
+  ;; FIXME: use hash-table when it grows
+  (list 404 #'get-404-env))
+
+(defun site-error-env (http-error-code)
+  (funcall (getf *http-error-code->env-fn* http-error-code)))
+
+(site-function site-error-html-path&env (http-return-code)
+  (let* ((error-code (with-output-to-string (out)
+		       (princ http-return-code out)))
+	 (result (select 'site-request-handler :where [and [= [slot-value 'site-request-handler 'uri-path] "error-code"]
+							   [= [slot-value 'site-request-handler 'uri-filename] error-code]]
+					      :flatp t)))
+    (assert (null (cdr result)))
+    (let* ((error-handler (first result))
+	   (filename (site-request-handler-fs-filename error-handler)))
+
+      (values
+       (make-pathname :directory (format nil "~A~A" (site-home-folder *selected-site*)
+					 (site-request-handler-fs-path error-handler))
+		      :name (pathname-name filename)
+		      :type (pathname-type filename))
+       (site-error-env http-return-code)))))
+
+(defun abstract5-http-error-handler (http-return-code)
+  (multiple-value-bind (html-path env)
+      (site-error-html-path&env http-return-code)
+    (when html-path
+      (with-output-to-string (out)
+	(html-template:fill-and-print-template html-path
+					       env
+					       :stream out)))))
+;;;
+;;; static handlers
+;;;
+(defun %static-file-handler (site-home-folder path filename)
+  (let ((pathname (make-pathname :directory (format nil "~A~A"
+						    site-home-folder
+						    path)
 				  :name (pathname-name filename)
 				  :type (pathname-type filename))))
-    ;; (site-request-handler-content-type site-handler)
-    (hunchentoot::handle-static-file pathname #+XXX content-type)))
+
+    (if (probe-file pathname)
+	(hunchentoot::handle-static-file pathname #+XXX content-type)
+	(abstract5-http-error-handler 404))))
+
+(defun static-file-handler (site-handler site filename)
+  (declare (ignore filename))
+  (%static-file-handler (site-home-folder site)
+			(site-request-handler-fs-path site-handler)
+			(site-request-handler-fs-filename site-handler)))
 
 (defun static-folder-handler (site-handler site filename)
-  (let ((pathname (make-pathname :directory (format nil "~A~A" (site-home-folder site)
-						    (site-request-handler-fs-path site-handler))
-				 :name (pathname-name filename)
-				 :type (pathname-type filename))))
-    ;; (site-request-handler-content-type site-handler)
-    (hunchentoot::handle-static-file pathname #+XXX content-type)))
+  (%static-file-handler (site-home-folder site)
+			(site-request-handler-fs-path site-handler)
+			filename))
 
 (defparameter *default-site-request-handlers*
   '(("/js/"		"/js/")
@@ -100,15 +145,6 @@
       (assert (null (cdr result)))
       (values (first result) filename))))
 
-(site-function page-not-found-handler ()
-  (let ((result (select 'site-request-handler :where [and [= [slot-value 'site-request-handler 'uri-path] "page-not-found"]
-							  [= [slot-value 'site-request-handler 'uri-filename] "page-not-found"]]
-					      :flatp t)))
-    (assert (null (cdr result)))
-    (first result)))
-
-#.(clsql-sys:locally-disable-sql-reader-syntax)
-
 (defun exec-site-handler (site-handler site filename)
   (bind-when (fn-sym (find-symbol (site-request-handler-fn-name site-handler) :abstract5))
     (bind-when (fn (symbol-function fn-sym))
@@ -122,10 +158,10 @@
       (find-site-request-handler (hunchentoot:script-name*))
     (if site-handler
 	(exec-site-handler site-handler site filename)
-	(bind-if (404-site-handler (page-not-found-handler))
-		 (exec-site-handler 404-site-handler site filename)
-		 ;; global 404 - FIXME: use custom default!
-		 (hunchentoot::default-handler)))))
+	(or (abstract5-http-error-handler 404)
+	    ;; global 404 - FIXME: use custom default!
+	    (hunchentoot::default-handler)))))
 
+#.(clsql-sys:locally-disable-sql-reader-syntax)
 
 ;;; HANDLERS.LISP ends here
