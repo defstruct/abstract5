@@ -44,7 +44,15 @@
 (let* ((site (make-db-instance 'site :name "Test localhost" :description "test site"))
        (subdomain (make-db-instance 'subdomain :name "localhost" :site site))
        (admin (make-db-instance 'admin :name "Jong-won Choi" :site site)))
+  (on-schema ((site-db-schema site))
+    (update-records-from-instance (make-db-instance 'site-request-handler
+						    :uri-path "page-not-found" :uri-filename "page-not-found"
+						    :fs-path "/html/"   :fs-filename "page-not-found.html"
+						    :fn-name "STATIC-FILE-HANDLER")))
   (list site subdomain admin))
+
+
+
 ;;(trace (:method iNITIALIZE-INSTANCE :AROUND (CLSQL-SYS::VIEW-CLASS-DIRECT-SLOT-DEFINITION)))
 #|
 (asdf:load-system :abstract5)

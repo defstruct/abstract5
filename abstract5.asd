@@ -63,6 +63,7 @@
 	       (:file "database")
 	       (:file "specials")
 	       (:file "classes")
+	       (:file "handlers")
 	       (:file "abstract5")))
 
 ;;; ABSTRACT5.ASD ends here

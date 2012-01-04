@@ -148,6 +148,7 @@
 			    (position #\: host-name)))))
 
 (defun http-request-handler (request)
+  #+XXX
   (print `(remote-addr ,(hunchentoot:remote-addr request)
 		       remote-port ,(hunchentoot:remote-port request)
 		       request-method ,(hunchentoot:request-method request)
@@ -157,11 +158,9 @@
 		       real-remote-addr ,(hunchentoot:real-remote-addr request)
 		       user-agent ,(hunchentoot:user-agent )
 		       ))
-  (with-site-context ((request->subdomain request))
-    (let ((uri-handlers (find-uri-handler (hunchentoot:script-name request))))
-      (print (mapcar #'(lambda (obj)
-			 `(,(uri-handler-uri-path obj) ,(uri-handler-uri-filename obj)))
-		     uri-handlers)))
+  (with-site-context (site (request->subdomain request))
+      (handle-site-request site)))
+#|
     ;;(print `(,*site-database-schema* ,*site-home-dir*))
     ;; check maintenance?
     ;; ...
@@ -185,6 +184,7 @@
 				    (append mvc-env
 					    (get-site-environment)
 					    (get-global-environment))))))))))
+|#
 
 (defun main ()
   ;; check config file. Load it or start installation web page

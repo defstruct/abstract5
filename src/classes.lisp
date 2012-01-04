@@ -220,8 +220,8 @@
 	(create-view-from-classes *schema-class-tables-in-db*)
 	(create-stored-procedures *common-stored-procedures*)
 	;; custom indexes
-	(create-index [idx-unique-uri] :on [uri-handler] :attributes '([uri-path] [uri-filename]))
-	(create-default-uri-handlers)))))
+	(create-index [idx-unique-uri] :on [site-request-handler] :attributes '([uri-path] [uri-filename]) :unique t)
+	(create-default-site-request-handlers)))))
 
 (defun find-site-from-subdomain-name (name)
   (using-public-db-cache
@@ -245,65 +245,33 @@
 ;;;
 ;;; URI and handler table
 ;;;
-(define-schema-class uri-handler ()
-  ((uri-path		:accessor uri-handler-uri-path
+(define-schema-class site-request-handler ()
+  ((uri-path		:accessor site-request-handler-uri-path
 			:initarg :uri-path
 			:type text
 			:db-kind :base
 			:db-constraints (:not-null))
-   (uri-filename	:accessor uri-handler-uri-filename
+   (uri-filename	:accessor site-request-handler-uri-filename
 			:initarg :uri-filename
 			:initform nil
 			:type text
 			:db-kind :base)
-   (fs-path		:accessor uri-handler-fs-path
+   (fs-path		:accessor site-request-handler-fs-path
 			:initarg :fs-path
 			:type text
 			:db-kind :base
 			:db-constraints (:not-null))
-   (fs-filename		:accessor uri-handler-fs-filename
+   (fs-filename		:accessor site-request-handler-fs-filename
 			:initarg :fs-filename
 			:initform nil
 			:type text
 			:db-kind :base)
-   (name		:accessor uri-handler-name
-			:initarg :name
+   (fn-name		:accessor site-request-handler-fn-name
+			:initarg :fn-name
 			:type text
 			:db-kind :base)))
 
-(defparameter *default-uri-handlers*
-  '(("/js/"		"/js/")
-    ("/css/"		"/css/")
-    ("/images/"		"/images/")
-    ("/html/"		"/html/")
-    ("/favicon.ico"	"/images/favicon.ico")
-    ("/robots.txt"	"/etc/robots.txt")))
 
-(defun create-default-uri-handlers ()
-  (loop for (uri fs) in *default-uri-handlers*
-     as (uri-path uri-filename) = (split-path&name uri)
-     and (fs-path fs-filename) = (split-path&name fs)
-     do (cond ((and uri-filename fs-filename)
-	       ;; file
-	       (make-db-instance 'uri-handler
-				 :uri-path uri-path :uri-filename uri-filename
-				 :fs-path fs-path   :fs-filename fs-filename
-				 :name "ABSTRACT5::STATIC-FILE-HANDLER"))
-	      ((and (null uri-filename) (null fs-filename))
-	       ;; folder
-	       (make-db-instance 'uri-handler
-				 :uri-path uri-path
-				 :fs-path fs-path
-				 :name "ABSTRACT5::STATIC-FOLDER-HANDLER"))
-	      (t (error "Programming error - invalid spec!")))))
-
-(site-function find-uri-handler (uri)
-  (destructuring-bind (path filename)
-      (split-path&name uri)
-    (select 'uri-handler :where [and [= [slot-value 'uri-handler 'uri-path] path]
-	                             [or [= [slot-value 'uri-handler 'uri-filename] filename]
-				         [null [slot-value 'uri-handler 'uri-filename]]]]
-	    :flatp t)))
 
 #|
 (init-postgresql)
