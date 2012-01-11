@@ -23,16 +23,14 @@ CREATE SEQUENCE oid_seq
     NO MINVALUE
     CACHE 1;
 
-CREATE TABLE mvc_entry (
-    oid integer DEFAULT nextval('oid_seq'::regclass) NOT NULL PRIMARY KEY,
+CREATE TABLE repl_entry (
+    status text NOT NULL,
     uri_path text NOT NULL,
     uri_filename text,
-    controller text NOT NULL,
+    reader text NOT NULL,
+    evaluator text NOT NULL,
+    printer text NOT NULL,
+    pathname text,
+    env text NOT NULL,
     UNIQUE(uri_path, uri_filename)
-);
-
-CREATE TABLE fs_mvc_entry (
-    mvc_oid integer NOT NULL PRIMARY KEY REFERENCES mvc_entry(oid),
-    fs_path text NOT NULL,
-    fs_filename text
 );

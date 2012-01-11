@@ -42,3 +42,15 @@ CREATE TABLE subdomain (
     name text NOT NULL UNIQUE,
     site_oid integer NOT NULL REFERENCES site(oid)
 );
+
+CREATE TABLE repl_entry (
+    status text NOT NULL,
+    uri_path text NOT NULL,
+    uri_filename text,
+    reader text NOT NULL,
+    evaluator text NOT NULL,
+    printer text NOT NULL,
+    pathname text,
+    env text NOT NULL,
+    UNIQUE(uri_path, uri_filename)
+);
