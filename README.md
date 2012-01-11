@@ -1,6 +1,6 @@
 # abstract5
 
-concrete5 in Common Lisp
+concrete5 like CMS in Common Lisp
 
 ## Creating DB
 createuser <user>
