@@ -47,34 +47,9 @@
 ;;; Classes in global namespace
 ;;;
 
-(defparameter *global-class-tables-in-db* ())
-
-(defun init-postgresql ()
-  (unless (sequence-exists-p [oid-seq])
-    (create-sequence [oid-seq]))
-  (create-view-from-classes *global-class-tables-in-db*)
-  (create-stored-procedures *common-stored-procedures*))
-
-(defun fix-oid-autoincrement (class-name)
-  (let ((oid-seq "oid_seq")
-	(class (find-class class-name)))
-    (flet ((maybe-set-oid-seq (slots)
-	     (bind-when (oid-slot (find 'oid slots :key #'slot-definition-name))
-	       (setf (clsql-sys::view-class-slot-autoincrement-sequence oid-slot) oid-seq))))
-      ;; NB: CLSQL uses two different kind of slots (not sure why)
-      (maybe-set-oid-seq (clsql-sys::ordered-class-slots class))
-      (maybe-set-oid-seq (clsql-sys::keyslots-for-class class)))))
-
-(defmacro define-persistent-class (name (&rest super-classes) &body body)
- `(prog1
-      (def-view-class ,name (,@super-classes)
-	,@body)
-    (fix-oid-autoincrement ',name)
-    (pushnew ',name *global-class-tables-in-db*)))
-
-;;;
-;;; OID-MIXIN
-;;;
+;;
+;; OID-MIXIN
+;;
 (define-persistent-class oid-mixin ()
   ((oid :reader oid :db-kind :key :type integer :db-constraints (:not-null :auto-increment))))
 
@@ -127,9 +102,9 @@
 	(find-persistent-object name (oid object))
 	object)))
 
-;;;
-;;; SUBDOMAIN
-;;;
+;;
+;; SUBDOMAIN
+;;
 (define-persistent-class subdomain (oid-mixin)
   ((name :reader subdomain-name :initarg :name :type text :db-kind :base :db-constraints (:not-null :unique))
    (site-oid :accessor site-oid :initarg :site-oid :type integer :db-kind :base)
@@ -140,11 +115,12 @@
 			       :retrieval :deferred
 			       :set t))))
 
-;;;
-;;; ADMIN
-;;;
+;;
+;; ADMIN
+;;
 (define-persistent-class admin (oid-mixin)
-  ((name :accessor admin-name :initarg :name :type text :db-kind :base)
+  ((name :accessor admin-name :initarg :name :type text :db-kind :base
+	 :db-constraints (:not-null))
    ;; email, phone, address, etc
    (site-oid :reader site-oid :type integer :db-kind :base)
    (site :accessor admin-site :initarg :site :db-kind :join
@@ -154,9 +130,9 @@
 			       :retrieval :deferred
 			       :set t))))
 
-;;;
-;;; SITE
-;;;
+;;
+;; SITE
+;;
 (define-persistent-class site (oid-mixin)
   ((name	:reader site-name
 		:initarg :name
@@ -216,12 +192,11 @@
     (with-transaction ()
       (create-schema schema)
       (on-schema (schema)
-	;; TODO: create tables
-	(create-view-from-classes *schema-class-tables-in-db*)
-	(create-stored-procedures *common-stored-procedures*)
-	;; custom indexes
-	(create-index [idx-unique-uri] :on [site-request-handler] :attributes '([uri-path] [uri-filename]) :unique t)
-	(create-default-site-request-handlers)))))
+	(init-schema-sql)
+	(let ((*selected-site* self))
+	  (load (make-pathname :directory (abstract5-folder :conf)
+			       :name "common-http-repl-entries"
+			       :type "lisp")))))))
 
 (defun find-site-from-subdomain-name (name)
   (using-public-db-cache
@@ -233,48 +208,64 @@
 ;; Schema namespace classes
 ;;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defparameter *schema-class-tables-in-db* nil)
-
-(defmacro define-schema-class (name (&rest super-classes) &body body)
- `(prog1
-      (def-view-class ,name (,@super-classes)
-	,@body)
-    (fix-oid-autoincrement ',name)
-    (pushnew ',name *schema-class-tables-in-db*)))
-
 ;;;
 ;;; URI and handler table
 ;;;
-(define-schema-class site-request-handler ()
-  ((uri-path		:accessor site-request-handler-uri-path
-			:initarg :uri-path
-			:type text
-			:db-kind :base
-			:db-constraints (:not-null))
-   (uri-filename	:accessor site-request-handler-uri-filename
-			:initarg :uri-filename
-			:initform nil
-			:type text
-			:db-kind :base)
-   (fs-path		:accessor site-request-handler-fs-path
-			:initarg :fs-path
-			:type text
-			:db-kind :base
-			:db-constraints (:not-null))
-   (fs-filename		:accessor site-request-handler-fs-filename
-			:initarg :fs-filename
-			:initform nil
-			:type text
-			:db-kind :base)
-   (fn-name		:accessor site-request-handler-fn-name
-			:initarg :fn-name
-			:type text
-			:db-kind :base)))
+(def-view-class repl-entry ()
+  ((status	 :accessor repl-entry-status
+		 :initarg :status
+		 :initform :enabled
+		 :type keyword
+		 :db-kind :base)
+   (uri-path	 :accessor repl-entry-uri-path
+		 :initarg :uri-path
+		 :type text
+		 :db-kind :base
+		 :db-constraints (:not-null))
+   (uri-filename :accessor repl-entry-uri-filename
+		 :initarg :uri-filename
+		 :initform nil
+		 :type text
+		 :db-kind :base)
+   (reader	 :accessor repl-entry-reader
+		 :initarg :reader
+		 :type symbol
+		 :db-kind :base)
+   (evaluator	 :accessor repl-entry-evaluator
+		 :initarg :evaluator
+		 :type symbol
+		 :db-kind :base)
+   (printer	 :accessor repl-entry-printer
+		 :initarg :printer
+		 :type symbol
+		 :db-kind :base)
+   (env		 :accessor repl-entry-env
+		 :initarg :env
+		 :initform nil
+		 :type list
+		 :db-kind :base)
+   (pathname	 :accessor repl-entry-pathname
+		 :initarg :pathname
+		 :initform nil
+		 :type text
+		 :db-kind :base)))
 
+(defmethod enabled-p ((repl-entry repl-entry))
+  (eq (repl-entry-status repl-entry) :enabled))
 
+(site-function find-repl-entry (uri)
+  (destructuring-bind (path filename)
+      (split-path&name uri)
+    (let ((result (select 'repl-entry
+			  :where [and [= [slot-value 'repl-entry 'uri-path] path]
+				      [or [= [slot-value 'repl-entry 'uri-filename] filename]
+					  [null [slot-value 'repl-entry 'uri-filename]]]]
+			  :flatp t)))
+      (assert (null (cdr result)))
+      (values (first result) filename))))
 
 #|
-(init-postgresql)
+(init-public-sql)
 (main)
 (start-sql-recording)
 (clsql-sys::enable-sql-reader-syntax)

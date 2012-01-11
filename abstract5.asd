@@ -63,7 +63,7 @@
 	       (:file "database")
 	       (:file "specials")
 	       (:file "classes")
-	       (:file "handlers")
+	       (:file "http-repl")
 	       (:file "abstract5")))
 
 ;;; ABSTRACT5.ASD ends here

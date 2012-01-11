@@ -45,14 +45,14 @@
 ;;;
 ;;; Errors, conditions
 ;;;
-(define-condition mvc-error ()
-  ((message :type string :initarg :message :reader mvc-error-message)))
+(define-condition internal-error ()
+  ((message :type string :initarg :message :reader internal-error-message)))
 
-(defvar *mvc-errors*) ;; used to accumulate error messages
-(defun push-mvc-error (error-message)
-  (push error-message *mvc-errors*))
-(defun get-mvc-errors ()
-  (reverse *mvc-errors*))
+(defvar *internal-errors*) ;; used to accumulate error messages
+(defun push-internal-error (error-message)
+  (push error-message *internal-errors*))
+(defun get-internal-errors ()
+  (reverse *internal-errors*))
 
 (define-condition site-not-found ()
   ((domain :type string :initarg :domain :reader site-not-found-domain))
@@ -60,27 +60,47 @@
               (format stream "Matching site not found: ~S"
                       (site-not-found-domain condition)))))
 
-(defparameter *abstract5-home-dir* (directory-namestring (merge-pathnames "../" *load-pathname*))
-  "Pathname for the 'abstract5/site-instances/defstruct'")
+(defparameter *abstract5-home*
+  (namestring (make-pathname :directory (butlast (pathname-directory *load-pathname*)))))
+
+(defparameter *abstract5-sub-folders*
+  '("conf" "templates" "js" "css" "images" "html" "etc"
+    #+FIXME "packages" #+FIXME "themes")
+  "Pathname for the 'abstract5/site-instances/*'")
+
+(defun make-abstract5-folder (dir1 dir2)
+  (namestring (make-pathname :directory dir1
+			     :name dir2)))
+
+(defparameter *abstract5-home-folders*
+  (mapcar (lambda (str)
+	    (cons (keyword (string-upcase str))
+		  (make-abstract5-folder *abstract5-home* str)))
+	  *abstract5-sub-folders*)
+  "Pathname for the 'abstract5/site-instances/*'")
+
+(defun abstract5-folder (keyword &key (test #'eql) (key #'identity))
+  (cdr (assoc keyword *abstract5-home-folders* :test test :key key)))
 
 (defun get-config-parameters (def keys)
   (mapcar (lambda (key)
 	    (getf def key))
 	  keys))
 
-(defparameter *site-sub-folders*
-  ;; FIXME: not finalised yet
-  (mapcar #'(lambda (dir)
-	      (make-pathname :directory `(:relative ,dir)))
-	  '("packages" "themes")))
+(defparameter *sub-folders-to-copy* '("templates" "etc"))
 
 (defun ensure-site-sub-folders (site-home)
-  (dolist (path *site-sub-folders*)
-    (ensure-directories-exist (merge-pathnames path site-home))))
+  (loop for folder in *abstract5-sub-folders*
+     as pathname = (merge-pathnames (make-pathname :directory folder) site-home)
+     and system-folder = (abstract5-folder folder :test #'string-equal :key #'symbol-name)
+     if system-folder
+     do (ccl::recursive-copy-directory system-folder pathname)
+     else
+     do (ensure-directories-exist pathname)))
 
 (defun ensure-site-home-folder (site-name)
-  (let ((home (merge-pathnames (make-pathname :directory  (format nil "sites/~(~A~)/" site-name))
-			       *abstract5-home-dir*)))
+  (let ((home (merge-pathnames (make-pathname :directory  (format nil "sites/~A/" site-name))
+			       *abstract5-home*)))
     (ensure-site-sub-folders home)
     (namestring home)))
 

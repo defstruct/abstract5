@@ -78,7 +78,6 @@
 (defun empty-string-p (str)
   (zerop (length str)))
 
-#+XXX
 (defun read-text-file (pathname)
   (with-open-file (in pathname :element-type '(unsigned-byte 8))
     (let ((sequence (make-array (file-length in)
@@ -112,7 +111,6 @@
     (string-trim +whitespace-characters+ str)))
 
 (defun split-path&name (pathname)
-  (assert (char= (aref pathname 0) #\/))
   (let ((end/ (position #\/ pathname :from-end t :test #'char=)))
     `(,(subseq pathname 0 (incf end/)) ,(when (> (length pathname) end/)
 					      (subseq pathname end/)))))

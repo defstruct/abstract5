@@ -41,11 +41,50 @@
   "$Id$
    Report bugs to: jongwon.choi@defstrutc.com")
 
+(defun request->subdomain (http-request)
+  (let ((host-name (hunchentoot:host http-request)))
+    (subseq host-name 0 (or (position #\. host-name)
+			    (position #\: host-name)))))
+
+(defun http-request-handler (request)
+  #+XXX
+  (print `(remote-addr ,(hunchentoot:remote-addr request)
+		       remote-port ,(hunchentoot:remote-port request)
+		       request-method ,(hunchentoot:request-method request)
+		       request-uri ,(hunchentoot:request-uri request)
+		       server-protocol ,(hunchentoot:server-protocol request)
+		       script-name ,(hunchentoot:script-name request)
+		       real-remote-addr ,(hunchentoot:real-remote-addr request)
+		       user-agent ,(hunchentoot:user-agent )
+		       ))
+  (with-site-context (site (request->subdomain request))
+    (http-read-eval-print-loop)))
+
+(defun main ()
+  ;; check config file. Load it or start installation web page
+  ;; DB(?) when?
+  ;; check update/migration file. Load and start migration
+  ;; check patch files. Load them
+
+  ;; timezone, session,
+  ;; FIXME: read from config file
+  (clsql-sys:connect '(#P"/var/run/postgresql/.s.PGSQL.5432" "abstract5" "jc" nil 5432) :encoding :utf-8)
+  (init-public-sql)
+  (setf hunchentoot:*hunchentoot-default-external-format* hunchentoot::+utf-8+)
+  (hunchentoot:start (make-instance 'hunchentoot:acceptor :port 8080)))
+
 ;;;
-;;; MVC functions/generic functions
+;;; Replace Hunchentoot's dispatcher function
 ;;;
-;; FIXME: with-mvc-site-env bind *mvc-site*
-(defvar *mvc-site*)
+(in-package :hunchentoot)
+
+(defun list-request-dispatcher (request)
+  (abstract5::http-request-handler request))
+
+
+#|
+
+
 
 (defun mvc-message-map (arg)
   (declare (ignore arg))
@@ -97,22 +136,6 @@
 	 (*mvc-site* (find-mvc-site??? "FIXME")))
      ,@body))
 
-;;;;
-
-(defgeneric run-operation&get-env (mvc-key mvc operator operands)
-  (:documentation
-   "Run OPERATOR with OPERANDS of given MVC-KEY and MVC then return an environment of key value pairs as in HTML-TEMPLATE library.")
-  (:method append ((key t) mvc operator operands)
-	   (declare (ignore mvc))
-	   (append (apply operator operands) ))
-  (:method-combination append))
-
-(defgeneric render-view-with-env (mvc-key mvc env)
-  (:documentation
-   "Return HTML view of MVC after applying ENV. MVC-KEY is the method specializer")
-  (:method (mvc-key mvc env)
-    (declare (ignore mvc-key))
-    (html-template:fill-and-print-template (view-template-printer mvc) env :stream *html-output-stream*)))
 
 ;;;
 ;;; with-site-db, with-site-env, with-http-params
@@ -132,80 +155,6 @@
 
 (defsetf config-param %set-config-param)
 
-
-
-;; FIXME: define VIEW-TEMPLATE-PRINTER
-
-
-
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defun parse-abstract5-uri (domain-name uri)
-  )
-
-(defun request->subdomain (http-request)
-  (let ((host-name (hunchentoot:host http-request)))
-    (subseq host-name 0 (or (position #\. host-name)
-			    (position #\: host-name)))))
-
-(defun http-request-handler (request)
-  #+XXX
-  (print `(remote-addr ,(hunchentoot:remote-addr request)
-		       remote-port ,(hunchentoot:remote-port request)
-		       request-method ,(hunchentoot:request-method request)
-		       request-uri ,(hunchentoot:request-uri request)
-		       server-protocol ,(hunchentoot:server-protocol request)
-		       script-name ,(hunchentoot:script-name request)
-		       real-remote-addr ,(hunchentoot:real-remote-addr request)
-		       user-agent ,(hunchentoot:user-agent )
-		       ))
-  (with-site-context (site (request->subdomain request))
-      (handle-site-request site)))
-#|
-    ;;(print `(,*site-database-schema* ,*site-home-dir*))
-    ;; check maintenance?
-    ;; ...
-    (let ((domain-name (hunchentoot:host request)))
-      (multiple-value-bind (mvc operation operands)
-	  ;; FIXME: define 404 mvc, Error mvc, etc
-	  ;; At this point, mvc and operation have proper values.
-	  ;; E.g., mvc can be 404 mvc for invalid operation
-	  (parse-abstract5-uri domain-name (hunchentoot:request-uri request))
-	(let ((mvc-key (mvc-key mvc)))
-	  ;; render-view-with-env may have :before, :after, and :around
-	  (with-mvc-site-env (mvc)
-	    (let ((mvc-env (handler-bind ((mvc-error #'(lambda (error)
-							 (push-mvc-error (error-message error))
-							 (throw 'mvc-error-catch nil))))
-			     (catch 'mvc-error-catch
-			       (run-operation&get-env mvc-key mvc operator operands)))))
-	      (set-content-type-header mvc) ;; instead of <meta ... content-type...>
-	      (render-view-with-env mvc-key
-				    mvc
-				    (append mvc-env
-					    (get-site-environment)
-					    (get-global-environment))))))))))
 |#
-
-(defun main ()
-  ;; check config file. Load it or start installation web page
-  ;; DB(?) when?
-  ;; check update/migration file. Load and start migration
-  ;; check patch files. Load them
-
-  ;; timezone, session,
-  ;; FIXME: read from config file
-  (clsql-sys:connect '(#P"/var/run/postgresql/.s.PGSQL.5432" "abstract5" "jc" nil 5432) :encoding :utf-8)
-
-  (setf hunchentoot:*hunchentoot-default-external-format* hunchentoot::+utf-8+)
-  (hunchentoot:start (make-instance 'hunchentoot:acceptor :port 8080)))
-
-;;;
-;;; Replace Hunchentoot's dispatcher function
-;;;
-(in-package :hunchentoot)
-
-(defun list-request-dispatcher (request)
-  (abstract5::http-request-handler request))
-
 
 ;;; ABSTRACT5.LISP ends here

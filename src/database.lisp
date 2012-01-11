@@ -85,24 +85,43 @@
    (clsql:query (format nil "select ~A(~{~A~^, ~})"
 			fn-name (mapcar #'clsql:sql args)))))
 
+(defparameter *public-sql-command-list* nil)
 
-(defun create-stored-procedures (list)
-  ;; FIXME: check existence
-  (dolist (stored-procedure list)
-    (clsql:execute-command stored-procedure)))
+(defun init-public-sql ()
+  (unless *public-sql-command-list*
+    (setf *public-sql-command-list* (cl-ppcre:split ";\\n\\n"
+						    (read-text-file (make-pathname :directory (abstract5-folder :conf)
+										   :name "public-schema"
+										   :type "sql")))))
+  (unless (query "select proname from pg_proc where proname = 'new_schema_and_get_prev_schema'")
+    (dolist (command *public-sql-command-list*)
+      (clsql-sys:execute-command command))))
 
-(defparameter *common-stored-procedures*
-  '("CREATE OR REPLACE FUNCTION new_schema_and_get_prev_schema(TEXT)
-RETURNS TEXT
-AS $$
-   DECLARE
-      the_new_schema alias for $1;
-      the_old_schema TEXT;
-BEGIN
-	select current_schema() into the_old_schema;
-	execute	'set search_path to ' || the_new_schema;
-        RETURN the_old_schema;
-END;$$
-LANGUAGE plpgsql;"))
+(defparameter *schema-sql-command-list* nil)
+
+(defun init-schema-sql ()
+  (unless *schema-sql-command-list*
+    (setf *schema-sql-command-list* (cl-ppcre:split ";\\n\\n"
+						    (read-text-file (make-pathname :directory (abstract5-folder :conf)
+										   :name "site-schema"
+										   :type "sql")))))
+  (dolist (command *schema-sql-command-list*)
+    (clsql-sys:execute-command command)))
+
+(defun fix-oid-autoincrement (class-name)
+  (let ((oid-seq "oid_seq")
+	(class (find-class class-name)))
+    (flet ((maybe-set-oid-seq (slots)
+	     (bind-when (oid-slot (find 'oid slots :key #'slot-definition-name))
+	       (setf (clsql-sys::view-class-slot-autoincrement-sequence oid-slot) oid-seq))))
+      ;; NB: CLSQL uses two different kind of slots (not sure why)
+      (maybe-set-oid-seq (clsql-sys::ordered-class-slots class))
+      (maybe-set-oid-seq (clsql-sys::keyslots-for-class class)))))
+
+(defmacro define-persistent-class (name (&rest super-classes) &body body)
+ `(prog1
+      (def-view-class ,name (,@super-classes)
+	,@body)
+    (fix-oid-autoincrement ',name)))
 
 ;;; DATABASE.LISP ends here

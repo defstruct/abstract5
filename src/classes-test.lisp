@@ -44,11 +44,6 @@
 (let* ((site (make-db-instance 'site :name "Test localhost" :description "test site"))
        (subdomain (make-db-instance 'subdomain :name "localhost" :site site))
        (admin (make-db-instance 'admin :name "Jong-won Choi" :site site)))
-  (on-schema ((site-db-schema site))
-    (make-db-instance 'site-request-handler
-		      :uri-path "error-code" :uri-filename "404"
-		      :fs-path "/html/"   :fs-filename "page-not-found.html"
-		      :fn-name "STATIC-FILE-HANDLER"))
   (list site subdomain admin))
 
 
@@ -58,10 +53,8 @@
 (asdf:load-system :abstract5)
 (in-package :abstract5)
 (main)
-(init-postgresql)
 (trace APPEND-SEARCH-PATH SET-SEARCH-PATH CURRENT-DB-SCHEMA SELECT FIND-PERSISTENT-OBJECT)
 (enable-sql-reader-syntax)
-
 (clsql:start-sql-recording)
 
 drop table admin;
