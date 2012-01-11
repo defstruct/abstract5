@@ -1,9 +1,6 @@
-SET client_encoding = 'UTF8';
-SET standard_conforming_strings = on;
-SET client_min_messages = warning;
-
-CREATE PROCEDURAL LANGUAGE plpgsql;
-
+--
+-- NOTE: Each command must be delimited with 2+ newlines.
+--
 CREATE FUNCTION new_schema_and_get_prev_schema(text) RETURNS text
     LANGUAGE plpgsql
     AS $_$

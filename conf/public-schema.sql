@@ -1,5 +1,10 @@
+--
+-- NOTE: Each command must be delimited with 2+ newlines.
+--
 SET client_encoding = 'UTF8';
+
 SET standard_conforming_strings = on;
+
 SET client_min_messages = warning;
 
 CREATE PROCEDURAL LANGUAGE plpgsql;
