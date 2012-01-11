@@ -49,8 +49,10 @@
 	(full-pathname (when fs-mapping
 			 (probe-file (format nil "~A~A" (site-home-folder *selected-site*) fs-mapping)))))
     (when fs-mapping
-      (assert full-pathname)
-      (setf full-pathname (namestring full-pathname)))
+      (if full-pathname
+ 	  (setf full-pathname (namestring full-pathname))
+ 	  (warn "File mapping not found: ~S -> ~S" fs-mapping (format nil "~A~A" (site-home-folder *selected-site*) fs-mapping))))
+
     `(bind-if (,repl-entry (find-repl-entry ,uri))
 	      (cond ((eq ,if-exists :overwrite)
 		     (setf (repl-entry-reader ,repl-entry) ',reader
@@ -107,9 +109,10 @@
 							 entry-env
 							 repl-entry-uri-path repl-entry-uri-filename)))))
 	(cond (eval-args
-	       (let ((eval-result (multiple-value-list (if repl-entry-evaluator
-							   (apply repl-entry-evaluator entry-env eval-args)
-							   eval-args))))
+	       (let ((eval-result (if repl-entry-evaluator
+				      (multiple-value-list (apply repl-entry-evaluator entry-env eval-args))
+				      eval-args)))
+		 #+XXX
 		 (print `(eval-result ,eval-result ))
 		 (apply repl-entry-printer entry-env eval-result)))
 	      (t (http-read-eval-print-loop "error/404")))))))
@@ -144,7 +147,8 @@
       (hunchentoot::handle-static-file pathname )
       (http-read-eval-print-loop "error/404")))
 
-(site-function uri-file->full-pathname (folder)
+(site-function uri-file->full-pathname (env folder)
+  (declare (ignore env))
   (let ((filename (second (split-path&name (script-name*)))))
     (make-pathname :directory folder
 		   :name (pathname-name filename)

@@ -87,16 +87,9 @@
 	    (getf def key))
 	  keys))
 
-(defparameter *sub-folders-to-copy* '("templates" "etc"))
-
 (defun ensure-site-sub-folders (site-home)
-  (loop for folder in *abstract5-sub-folders*
-     as pathname = (merge-pathnames (make-pathname :directory folder) site-home)
-     and system-folder = (abstract5-folder folder :test #'string-equal :key #'symbol-name)
-     if system-folder
-     do (ccl::recursive-copy-directory system-folder pathname)
-     else
-     do (ensure-directories-exist pathname)))
+  (ccl::recursive-copy-directory (merge-pathnames "site-template" *abstract5-home*)
+				 site-home))
 
 (defun ensure-site-home-folder (site-name)
   (let ((home (merge-pathnames (make-pathname :directory  (format nil "sites/~A/" site-name))
