@@ -42,7 +42,6 @@
    Report bugs to: jongwon.choi@defstruct.com")
 
 (defmacro define-repl-entry ((uri &optional fs-mapping) &key (if-exists :error) env reader evaluator printer)
-  (assert (boundp '*selected-site*))
   (let ((repl-entry (gensym "REPL-ENTRY"))
 	(path (gensym "PATH"))
 	(filename (gensym "FILENAME"))
@@ -53,32 +52,34 @@
  	  (setf full-pathname (namestring full-pathname))
  	  (warn "File mapping not found: ~S -> ~S" fs-mapping (format nil "~A~A" (site-home-folder *selected-site*) fs-mapping))))
 
-    `(bind-if (,repl-entry (find-repl-entry ,uri))
-	      (cond ((eq ,if-exists :overwrite)
-		     (setf (repl-entry-reader ,repl-entry) ',reader
-			   (repl-entry-evaluator ,repl-entry) ',evaluator
-			   (repl-entry-printer ,repl-entry) ',printer)
-		     ,@(when env
-			     `((setf (repl-entry-env ,repl-entry) ',env)))
-		     ,@(when full-pathname
-			     `((setf (repl-entry-pathname ,repl-entry) ,full-pathname)))
-		     (update-records-from-instance ,repl-entry)
-		     ,repl-entry)
-		    ((eq ,if-exists :error)
-		     (error "FIXME"))
-		    (t ,repl-entry))
-	      (destructuring-bind (,path ,filename)
-		  (split-path&name ,uri)
-		(make-db-instance 'repl-entry
-				  :uri-path ,path
-				  :uri-filename ,filename
-				  :reader ',reader
-				  :evaluator ',evaluator
-				  :printer ',printer
-				  ,@(when full-pathname
-					  `(:pathname ,full-pathname))
-				  ,@(when env
-					  `(:env ',env)))))))
+    `(progn
+       (assert (boundp '*selected-site*))
+       (bind-if (,repl-entry (find-repl-entry ,uri))
+		(cond ((eq ,if-exists :overwrite)
+		       (setf (repl-entry-reader ,repl-entry) ',reader
+			     (repl-entry-evaluator ,repl-entry) ',evaluator
+			     (repl-entry-printer ,repl-entry) ',printer)
+		       ,@(when env
+			       `((setf (repl-entry-env ,repl-entry) ',env)))
+		       ,@(when full-pathname
+			       `((setf (repl-entry-pathname ,repl-entry) ,full-pathname)))
+		       (update-records-from-instance ,repl-entry)
+		       ,repl-entry)
+		      ((eq ,if-exists :error)
+		       (error "FIXME"))
+		      (t ,repl-entry))
+		(destructuring-bind (,path ,filename)
+		    (split-path&name ,uri)
+		  (make-db-instance 'repl-entry
+				    :uri-path ,path
+				    :uri-filename ,filename
+				    :reader ',reader
+				    :evaluator ',evaluator
+				    :printer ',printer
+				    ,@(when full-pathname
+					    `(:pathname ,full-pathname))
+				    ,@(when env
+					    `(:env ',env))))))))
 
 (site-function http-read-eval-print-loop (&optional (uri (hunchentoot:script-name*)))
   ;; FIXME add (when (maintenance-p) (find-mvc-entry "error/504"))??
@@ -86,9 +87,7 @@
 	entry-env)
     (when (or (null repl-entry) (not (enabled-p repl-entry)))
       (setf repl-entry (find-repl-entry "error/404")))
-    (with-accessors ((repl-entry-uri-path repl-entry-uri-path)
-		     (repl-entry-uri-filename repl-entry-uri-filename)
-		     (repl-entry-env repl-entry-env)
+    (with-accessors ((repl-entry-env repl-entry-env)
 		     (repl-entry-pathname repl-entry-pathname)
 		     (repl-entry-reader repl-entry-reader)
 		     (repl-entry-evaluator repl-entry-evaluator)
@@ -96,18 +95,14 @@
 	repl-entry
       (setf entry-env repl-entry-env)
       #+XXX
-      (print `(repl-entry-uri-path ,repl-entry-uri-path
-	       repl-entry-uri-filename ,repl-entry-uri-filename
-	       repl-entry-env ,repl-entry-env
+      (print `(repl-entry-env ,repl-entry-env
 	       repl-entry-pathname ,repl-entry-pathname
 	       repl-entry-reader ,repl-entry-reader
 	       repl-entry-evaluator ,repl-entry-evaluator
 	       repl-entry-printer ,repl-entry-printer))
       (let ((eval-args (multiple-value-list (if repl-entry-pathname
 						repl-entry-pathname
-						(funcall repl-entry-reader
-							 entry-env
-							 repl-entry-uri-path repl-entry-uri-filename)))))
+						(funcall repl-entry-reader entry-env)))))
 	(cond (eval-args
 	       (let ((eval-result (if repl-entry-evaluator
 				      (multiple-value-list (apply repl-entry-evaluator entry-env eval-args))
@@ -153,5 +148,16 @@
     (make-pathname :directory folder
 		   :name (pathname-name filename)
 		   :type (pathname-type filename))))
+;;
+;; Dashboard implementation
+;;
+(defun read-dashboard-request (env)
+  (print `(,(hunchentoot:request-uri*) ,(hunchentoot:script-name*))))
+
+(defun eval-dashboard-request (env args)
+  "")
+
+(defun print-dashboard-request (env args)
+  "test")
 
 ;;; HTTP-REPL.LISP ends here

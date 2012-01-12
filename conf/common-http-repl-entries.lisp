@@ -63,14 +63,14 @@
   :evaluator uri-file->full-pathname
   :printer   print-static-file)
 
-(define-repl-entry ("/core/")
-  :reader    read-core-request
-  :evaluator eval-core-request
-  :printer   print-core-request)
-
 (define-repl-entry ("error/404" "/templates/page-not-found.html")
   :env	     ((:error-code . 404))
   :evaluator get-error-template-and-env
   :printer   print-template-for-error)
+
+(define-repl-entry ("/dashboard/")
+  :reader    read-dashboard-request
+  :evaluator eval-dashboard-request
+  :printer   print-dashboard-request)
 
 ;;; COMMON-HTTP-REPL-ENTRIES.LISP ends here

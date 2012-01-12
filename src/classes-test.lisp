@@ -56,6 +56,13 @@
 (trace APPEND-SEARCH-PATH SET-SEARCH-PATH CURRENT-DB-SCHEMA SELECT FIND-PERSISTENT-OBJECT)
 (enable-sql-reader-syntax)
 (clsql:start-sql-recording)
+(let ((*SELECTED-SITE* (find-persistent-object 'site 31)))
+	     (on-schema ((site-db-schema *selected-site*))
+	      (define-repl-entry ("/dashboard")
+		 :reader    read-dashboard-request
+		 :evaluator eval-dashboard-request
+		 :printer   print-dashboard-request)))
+
 
 drop table admin;
 drop table oid_mixin ;
