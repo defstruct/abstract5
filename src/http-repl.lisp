@@ -76,9 +76,11 @@
 (defvar *repl-env*)
 
 (site-function set-env-value (key val)
-  (bind-if (found (assoc key *repl-env*))
-	   (setf (cdr found) val)
-	   (push (cons key val) *repl-env*)))
+  (if *repl-env*
+      (bind-if (found (assoc key *repl-env*))
+	       (setf (cdr found) val)
+	       (push (cons key val) *repl-env*))
+      (setf *repl-env* (list (cons key val)))))
 
 (site-function get-env-value (key)
   (cdr (assoc key *repl-env*)))
@@ -117,43 +119,49 @@
 (defparameter *error-code->env-contructor*
   (list (list 404 :uri 'script-name*)))
 
-(site-function get-error-template-and-env (pathname)
+(site-function set-env/get-error-template (pathname)
   (bind-if (error-code (get-env-value :error-code))
 	   (destructuring-bind (code key fn)
 	       (assoc error-code *error-code->env-contructor*)
 	     (declare (ignore code))
-	     (set-env-value :template-env (list key (funcall fn)))
+	     (set-env-value :html-template (list key (funcall fn)))
 	     pathname)
 	   (error "FIXME:Programming error?")))
 
-(defun print-standard-html-template (pathname)
+(defun print-standard-html-template (filename)
   ;; FIXME: add theme dir later
   (loop for folder in (list #+FIXME *selected-theme*
 			    (and (boundp '*selected-site*) (site-home-folder *selected-site*))
 			    *abstract5-home*)
-     as merged-pathname = (merge-pathnames pathname folder)
+     as merged-pathname = (merge-pathnames filename folder)
      when (setf merged-pathname (probe-file merged-pathname))
      do (return-from print-standard-html-template
 	  (with-output-to-string (out)
 	    (html-template:fill-and-print-template merged-pathname
-						   (get-env-value :template-env)
-					      :stream out))))
-  (error "Requested template ~S not found in theme, site and global folders" pathname))
+						   (get-env-value :html-template)
+					      :stream out)))))
+  (error "Requested template ~S not found in theme, site and global folders" filename))
 
 (site-function print-static-file (pathname)
-  (if (probe-file pathname)
+  (if (and pathname (probe-file pathname))
       (hunchentoot::handle-static-file pathname )
       (http-read-eval-print-loop "error/404")))
 
-(site-function uri-file->full-pathname (folder)
+(site-function uri-file->full-pathname (folder-n)
   (let ((filename (second (split-path&name (script-name*)))))
-    (make-pathname :directory folder
-		   :name (pathname-name filename)
-		   :type (pathname-type filename))))
+    (loop for folder-1 in (list #+FIXME *selected-theme*
+				(and (boundp '*selected-site*) (site-home-folder *selected-site*))
+				*abstract5-home*)
+       as merged-pathname = (merge-pathnames filename (format nil "~A~A" folder-1 folder-n))
+       when (setf merged-pathname (probe-file merged-pathname))
+       do (return-from uri-file->full-pathname
+	    merged-pathname))))
 ;;
 ;; Dashboard implementation
 ;;
-(defun eval-dashboard-request (args)
-  args)
+(defun eval-dashboard-request (pathname)
+  (set-env-value :html-template `(:html-lang "en" :charset "utf-8"
+				  :title ,(format nil "~A :: ~A" (site-name *selected-site*) "Dashboard")))
+  pathname)
 
 ;;; HTTP-REPL.LISP ends here
