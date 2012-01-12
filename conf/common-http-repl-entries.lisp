@@ -42,24 +42,26 @@
    Report bugs to: jongwon.choi@defstruct.com")
 
 (define-repl-entry ("/robots.txt" "/etc/robots.txt")
+  :evaluator uri-file->full-pathname
   :printer   print-static-file)
 
 (define-repl-entry ("/favicon.ico" "/images/favicon.ico")
-  :printer   print-static-file)
-
-(define-repl-entry ("/images/" "/images/")
   :evaluator uri-file->full-pathname
   :printer   print-static-file)
 
-(define-repl-entry ("/html/" "/html/")
+(define-repl-entry ("/images/" "images/")
   :evaluator uri-file->full-pathname
   :printer   print-static-file)
 
-(define-repl-entry ("/css/" "/css/")
+(define-repl-entry ("/html/" "html/")
   :evaluator uri-file->full-pathname
   :printer   print-static-file)
 
-(define-repl-entry ("/js/" "/js/")
+(define-repl-entry ("/css/" "css/")
+  :evaluator uri-file->full-pathname
+  :printer   print-static-file)
+
+(define-repl-entry ("/js/" "js/")
   :evaluator uri-file->full-pathname
   :printer   print-static-file)
 

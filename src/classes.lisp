@@ -257,11 +257,16 @@
   (destructuring-bind (path filename)
       (split-path&name uri)
     (let ((result (select 'repl-entry
-			  :where [and [= [slot-value 'repl-entry 'uri-path] path]
-				      [or [= [slot-value 'repl-entry 'uri-filename] filename]
-					  [null [slot-value 'repl-entry 'uri-filename]]]]
-			  :flatp t)))
-      (assert (null (cdr result)))
+			  :where [or [and [= [slot-value 'repl-entry 'uri-path] path]
+					  [= [slot-value 'repl-entry 'uri-filename] filename]]
+				     [and [= [slot-value 'repl-entry 'uri-path]
+				             (bind-if (pos (position #\/ path :start 1 :test #'char=))
+						      (subseq path 0 (incf pos))
+						      path)]
+				          [null [slot-value 'repl-entry 'uri-filename]]]]
+			  :flatp t
+			  :order-by [slot-value 'repl-entry 'uri-filename])))
+      ;; Because of order-by, first match will be right one.
       (values (first result) filename))))
 
 #|

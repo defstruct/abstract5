@@ -92,6 +92,8 @@
     (when (or (null repl-entry) (not (enabled-p repl-entry)))
       (setf repl-entry (find-repl-entry "error/404")))
     (with-accessors ((repl-entry-env repl-entry-env)
+		     (repl-entry-uri-path repl-entry-uri-path)
+		     (repl-entry-uri-filename repl-entry-uri-filename)
 		     (repl-entry-pathname repl-entry-pathname)
 		     (repl-entry-reader repl-entry-reader)
 		     (repl-entry-evaluator repl-entry-evaluator)
@@ -104,9 +106,16 @@
 	       repl-entry-reader ,repl-entry-reader
 	       repl-entry-evaluator ,repl-entry-evaluator
 	       repl-entry-printer ,repl-entry-printer))
-      (let ((eval-args (multiple-value-list (if repl-entry-pathname
-						repl-entry-pathname
-						(funcall repl-entry-reader)))))
+      (let ((eval-args (multiple-value-list (cond ((and repl-entry-uri-path repl-entry-uri-filename)
+						   ;; file mapping
+						   repl-entry-pathname)
+						  (repl-entry-uri-path
+						   ;; dir mapping
+						   (format nil "~A~A"
+							   repl-entry-pathname
+							   (subseq (script-name*) (length repl-entry-uri-path))))
+						  (t (funcall repl-entry-reader))))))
+	;;(print `(eval-args ,eval-args ))
 	(cond (eval-args
 	       (let ((eval-result (if repl-entry-evaluator
 				      (multiple-value-list (apply repl-entry-evaluator eval-args))
@@ -147,21 +156,37 @@
       (hunchentoot::handle-static-file pathname )
       (http-read-eval-print-loop "error/404")))
 
-(site-function uri-file->full-pathname (folder-n)
-  (let ((filename (second (split-path&name (script-name*)))))
-    (loop for folder-1 in (list #+FIXME *selected-theme*
-				(and (boundp '*selected-site*) (site-home-folder *selected-site*))
-				*abstract5-home*)
-       as merged-pathname = (merge-pathnames filename (format nil "~A~A" folder-1 folder-n))
-       when (setf merged-pathname (probe-file merged-pathname))
-       do (return-from uri-file->full-pathname
-	    merged-pathname))))
+(site-function uri-file->full-pathname (relative-pathname)
+  (loop for folder in (list #+FIXME *selected-theme*
+			      (and (boundp '*selected-site*) (site-home-folder *selected-site*))
+			      *abstract5-home*)
+     as merged-pathname = (format nil "~A~A" folder relative-pathname)
+     when (setf merged-pathname (probe-file merged-pathname))
+     do (return-from uri-file->full-pathname
+	  merged-pathname)))
 ;;
 ;; Dashboard implementation
 ;;
 (defun eval-dashboard-request (pathname)
-  (set-env-value :html-template `(:html-lang "en" :charset "utf-8"
-				  :title ,(format nil "~A :: ~A" (site-name *selected-site*) "Dashboard")))
+  (let ((css-files (mapcar (lambda (css)
+			       (list :css-file (format nil "/css/~A" css)))
+			     '("ccm.base.css"
+
+			       "ccm.dashboard.css" "ccm.colorpicker.css" "ccm.menus.css"
+			       "ccm.forms.css" "ccm.search.css" "ccm.filemanager.css" "ccm.dialog.css"
+			       "jquery.rating.css" "jquery.ui.css")))
+	(js-files (mapcar (lambda (js)
+			    (list :js-file (format nil "/js/~A" js)))
+			  '("jquery.js" "ccm.base.js"
+			    "jquery.ui.js" "ccm.dialog.js" "ccm.base.js" "jquery.rating.js"
+			    "jquery.form.js" "ccm.ui.js" "quicksilver.js"
+			    "jquery.liveupdate.js" "ccm.search.js" "ccm.filemanager.js"
+			    "ccm.themes.js" "jquery.ui.js" "jquery.colorpicker.js" "tiny_mce/tiny_mce.js"
+			    ))))
+    (set-env-value :html-template `(:html-lang "en" :charset "utf-8"
+					       :title ,(format nil "~A :: ~A" (site-name *selected-site*) "Dashboard")
+					       :css-files ,css-files
+					       :js-files ,js-files)))
   pathname)
 
 ;;; HTTP-REPL.LISP ends here
