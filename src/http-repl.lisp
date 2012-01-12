@@ -139,7 +139,7 @@
 	  (with-output-to-string (out)
 	    (html-template:fill-and-print-template merged-pathname
 						   (get-env-value :html-template)
-					      :stream out)))))
+					      :stream out))))
   (error "Requested template ~S not found in theme, site and global folders" filename))
 
 (site-function print-static-file (pathname)
