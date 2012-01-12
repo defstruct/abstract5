@@ -41,48 +41,38 @@
   "$Id$
    Report bugs to: jongwon.choi@defstruct.com")
 
-(defmacro define-repl-entry ((uri &optional fs-mapping) &key (if-exists :error) env reader evaluator printer)
+(defmacro define-repl-entry ((uri &optional pathname) &key (if-exists :error) env reader evaluator printer)
   (let ((repl-entry (gensym "REPL-ENTRY"))
 	(path (gensym "PATH"))
-	(filename (gensym "FILENAME"))
-	(full-pathname (gensym "FULL-PATHNAME")))
+	(filename (gensym "FILENAME")))
     `(progn
        (assert (boundp '*selected-site*))
-       (let ((,full-pathname (when ,fs-mapping
-			       (probe-file (format nil "~A~A" (site-home-folder *selected-site*) ,fs-mapping)))))
-	 (when ,fs-mapping
-	   (if ,full-pathname
-	       (setf ,full-pathname (namestring ,full-pathname))
-	       (warn "File mapping not found: ~S -> ~S" ,fs-mapping
-		     (format nil "~A~A" (site-home-folder *selected-site*) ,fs-mapping))))
-
-	 (bind-if (,repl-entry (find-repl-entry ,uri))
-		  (cond ((eq ,if-exists :overwrite)
-			 (setf (repl-entry-reader ,repl-entry) ',reader
-			       (repl-entry-evaluator ,repl-entry) ',evaluator
-			       (repl-entry-printer ,repl-entry) ',printer)
-			 ,@(when env
-				 `((setf (repl-entry-env ,repl-entry) ',env)))
-			 ,@(when full-pathname
-				 `((setf (repl-entry-pathname ,repl-entry) ,full-pathname)))
-			 (update-records-from-instance ,repl-entry)
-			 ,repl-entry)
-			((eq ,if-exists :error)
-			 (error "FIXME"))
+       (bind-if (,repl-entry (find-repl-entry ,uri))
+		(cond ((eq ,if-exists :overwrite)
+		       (setf (repl-entry-reader ,repl-entry) ',reader
+			     (repl-entry-evaluator ,repl-entry) ',evaluator
+			     (repl-entry-printer ,repl-entry) ',printer)
+		       ,@(when env
+			       `((setf (repl-entry-env ,repl-entry) ',env)))
+		       ,@(when pathname
+			       `((setf (repl-entry-pathname ,repl-entry) ,pathname)))
+		       (update-records-from-instance ,repl-entry)
+		       ,repl-entry)
+		      ((eq ,if-exists :error)
+		       (error "FIXME"))
 			(t ,repl-entry))
-		  (destructuring-bind (,path ,filename)
-		      (split-path&name ,uri)
-		    (make-db-instance 'repl-entry
-				      :uri-path ,path
-				      :uri-filename ,filename
-				      :reader ',reader
-				      :evaluator ',evaluator
-				      :printer ',printer
-				      ,@(when full-pathname
-					      `(:pathname ,full-pathname))
-				      ,@(when env
-					      `(:env ',env)))))))))
-
+		(destructuring-bind (,path ,filename)
+		    (split-path&name ,uri)
+		  (make-db-instance 'repl-entry
+				    :uri-path ,path
+				    :uri-filename ,filename
+				    :reader ',reader
+				    :evaluator ',evaluator
+				    :printer ',printer
+				    ,@(when pathname
+					    `(:pathname ,pathname))
+				    ,@(when env
+					    `(:env ',env))))))))
 (defvar *repl-env*)
 
 (site-function set-env-value (key val)
@@ -136,11 +126,19 @@
 	     pathname)
 	   (error "FIXME:Programming error?")))
 
-(site-function print-template-for-error (pathname)
-  (with-output-to-string (out)
-    (html-template:fill-and-print-template (probe-file pathname)
-					   (get-env-value :template-env)
-					   :stream out)))
+(defun print-standard-html-template (pathname)
+  ;; FIXME: add theme dir later
+  (loop for folder in (list #+FIXME *selected-theme*
+			    (and (boundp '*selected-site*) (site-home-folder *selected-site*))
+			    *abstract5-home*)
+     as merged-pathname = (merge-pathnames pathname folder)
+     when (setf merged-pathname (probe-file merged-pathname))
+     do (return-from print-standard-html-template
+	  (with-output-to-string (out)
+	    (html-template:fill-and-print-template merged-pathname
+						   (get-env-value :template-env)
+					      :stream out))))
+  (error "Requested template ~S not found in theme, site and global folders" pathname))
 
 (site-function print-static-file (pathname)
   (if (probe-file pathname)
@@ -157,11 +155,5 @@
 ;;
 (defun eval-dashboard-request (args)
   args)
-
-(site-function print-dashboard-request (pathname)
-  (with-output-to-string (out)
-    (html-template:fill-and-print-template (probe-file pathname)
-					   (get-env-value :template-env)
-					   :stream out)))
 
 ;;; HTTP-REPL.LISP ends here

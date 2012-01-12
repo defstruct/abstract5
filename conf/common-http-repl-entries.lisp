@@ -63,13 +63,15 @@
   :evaluator uri-file->full-pathname
   :printer   print-static-file)
 
-(define-repl-entry ("error/404" "/html-templates/page-not-found.html")
+;; NOTE: 1. No '/'
+;;	 2. html-template search path is: theme, site and global
+(define-repl-entry ("error/404" "html-templates/page-not-found.html")
   :env	     ((:error-code . 404))
   :evaluator get-error-template-and-env
-  :printer   print-template-for-error)
+  :printer   print-standard-html-template)
 
-(define-repl-entry ("/dashboard/" "/html-templates/top-level-view.html")
+(define-repl-entry ("/dashboard/" "html-templates/top-level-view.html")
   :evaluator eval-dashboard-request
-  :printer   print-dashboard-request)
+  :printer   print-standard-html-template)
 
 ;;; COMMON-HTTP-REPL-ENTRIES.LISP ends here
