@@ -68,8 +68,7 @@
   :evaluator get-error-template-and-env
   :printer   print-template-for-error)
 
-(define-repl-entry ("/dashboard/")
-  :reader    read-dashboard-request
+(define-repl-entry ("/dashboard/" "/html-templates/top-level-view.html")
   :evaluator eval-dashboard-request
   :printer   print-dashboard-request)
 
