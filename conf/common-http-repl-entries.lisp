@@ -63,7 +63,7 @@
   :evaluator uri-file->full-pathname
   :printer   print-static-file)
 
-(define-repl-entry ("error/404" "/templates/page-not-found.html")
+(define-repl-entry ("error/404" "/html-templates/page-not-found.html")
   :env	     ((:error-code . 404))
   :evaluator get-error-template-and-env
   :printer   print-template-for-error)

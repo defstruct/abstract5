@@ -64,7 +64,7 @@
   (namestring (make-pathname :directory (butlast (pathname-directory *load-pathname*)))))
 
 (defparameter *abstract5-sub-folders*
-  '("conf" "templates" "js" "css" "images" "html" "etc"
+  '("conf" "html-templates" "js" "css" "images" "html" "etc"
     #+FIXME "packages" #+FIXME "themes")
   "Pathname for the 'abstract5/site-instances/*'")
 
