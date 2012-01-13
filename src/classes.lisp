@@ -144,6 +144,11 @@
 		:initarg :description
 		:type text
 		:db-kind :base)
+   (locale	:accessor site-locale
+		:initarg :locale
+		:initform "en_AU.UTF-8"		; FIXME: someday support other
+		:type text
+		:db-kind :base)
    (home-folder :accessor site-home-folder
 		:initarg :home-folder
 		:type text
@@ -169,6 +174,28 @@
    (record-caches :reader site-record-caches
 		  :initform (tg:make-weak-hash-table :test #'equal :weakness :value)
 		  :db-kind :virtual)))
+
+(defmethod site-language ((site site))
+  (let* ((locale (site-locale site))
+	 (_pos (position #\_ locale :test #'char=)))
+    (assert _pos)
+    (subseq locale 0 _pos)))
+
+(defun site-language* ()
+  (assert *selected-site*)
+  (site-language *selected-site*))
+
+(defmethod site-encoding ((site site))
+  (let* ((locale (site-locale site))
+	 (.pos (position #\. locale :test #'char=)))
+    (assert .pos)
+    (subseq locale (1+ .pos))))
+
+(site-function site-language* ()
+  (site-language *selected-site*))
+
+(site-function site-encoding* ()
+  (site-encoding *selected-site*))
 
 ;;
 ;; custom caches - patching the existing clsql-sys method

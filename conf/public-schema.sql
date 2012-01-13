@@ -39,6 +39,7 @@ CREATE TABLE site (
     name text NOT NULL UNIQUE,
     description text,
     home_folder text,
+    locale text,
     db_schema text NOT NULL
 );
 
