@@ -37,7 +37,7 @@
 
 (in-package :abstract5)
 
-(defconstant +common-http-repl-entries-version+ "$Revision$"
+(defconstant +core-http-repl-entries-version+ "$Revision$"
   "$Id$
    Report bugs to: jongwon.choi@defstruct.com")
 
@@ -86,4 +86,4 @@
   :evaluator http-request-using-uri
   :printer   identity)
 
-;;; COMMON-HTTP-REPL-ENTRIES.LISP ends here
+;;; CORE-HTTP-REPL-ENTRIES.LISP ends here
