@@ -72,7 +72,11 @@
   :evaluator set-env/get-error-template
   :printer   print-standard-html-template)
 
-(define-repl-entry ("/dashboard/" "html-templates/html-template.html")
+(define-repl-entry ("/dashboard" "html-templates/html-template.html")
+  :evaluator eval-dashboard-request
+  :printer   print-standard-html-template)
+
+(define-repl-entry ("/dashboard/sitemap" "html-templates/html-template.html")
   :evaluator eval-dashboard-request
   :printer   print-standard-html-template)
 
