@@ -191,9 +191,6 @@
     (assert .pos)
     (subseq locale (1+ .pos))))
 
-(site-function site-language* ()
-  (site-language *selected-site*))
-
 (site-function site-encoding* ()
   (site-encoding *selected-site*))
 
@@ -286,10 +283,7 @@
     (let ((result (select 'repl-entry
 			  :where [or [and [= [slot-value 'repl-entry 'uri-path] path]
 					  [= [slot-value 'repl-entry 'uri-filename] filename]]
-				     [and [= [slot-value 'repl-entry 'uri-path]
-				             (bind-if (pos (position #\/ path :start 1 :test #'char=))
-						      (subseq path 0 (incf pos))
-						      path)]
+				     [and [= [slot-value 'repl-entry 'uri-path] path]
 				          [null [slot-value 'repl-entry 'uri-filename]]]]
 			  :flatp t
 			  :order-by [slot-value 'repl-entry 'uri-filename])))

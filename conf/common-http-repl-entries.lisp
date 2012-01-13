@@ -81,7 +81,7 @@
   :printer   print-standard-html-template)
 
 ;; This is an example
-(define-repl-entry ("/help/")
+(define-repl-entry ("/help")
   :env ((:uri . "http://www.concrete5.org/tools/help_overlay/"))
   :evaluator http-request-using-uri
   :printer   identity)
