@@ -120,8 +120,6 @@
 	       (let ((eval-result (if repl-entry-evaluator
 				      (multiple-value-list (apply repl-entry-evaluator eval-args))
 				      eval-args)))
-		 #+XXX
-		 (print `(eval-result ,eval-result ))
 		 (apply repl-entry-printer eval-result)))
 	      (t (http-read-eval-print-loop "error/404")))))))
 
@@ -171,22 +169,37 @@
   (let ((css-files (mapcar (lambda (css)
 			       (list :css-file (format nil "/css/~A" css)))
 			     '("ccm.base.css"
-
 			       "ccm.dashboard.css" "ccm.colorpicker.css" "ccm.menus.css"
 			       "ccm.forms.css" "ccm.search.css" "ccm.filemanager.css" "ccm.dialog.css"
 			       "jquery.rating.css" "jquery.ui.css")))
 	(js-files (mapcar (lambda (js)
 			    (list :js-file (format nil "/js/~A" js)))
-			  '("jquery.js" "ccm.base.js"
+			  `("jquery.js" "ccm.base.js"
 			    "jquery.ui.js" "ccm.dialog.js" "ccm.base.js" "jquery.rating.js"
 			    "jquery.form.js" "ccm.ui.js" "quicksilver.js"
 			    "jquery.liveupdate.js" "ccm.search.js" "ccm.filemanager.js"
 			    "ccm.themes.js" "jquery.ui.js" "jquery.colorpicker.js" "tiny_mce/tiny_mce.js"
+			    ;; FIXME: datepicker stuff for non 'en'
 			    ))))
-    (set-env-value :html-template `(:html-lang "en" :charset "utf-8"
-					       :title ,(format nil "~A :: ~A" (site-name *selected-site*) "Dashboard")
-					       :css-files ,css-files
-					       :js-files ,js-files)))
+    (set-env-value :html-template `(:html-lang ,(site-language*)
+				    :charset ,(site-encoding*)
+				    :title ,(format nil "~A :: ~A" (site-name *selected-site*) "Dashboard")
+				    :css-files ,css-files
+				    :js-files ,js-files
+				    :html-body (merge-pathnames "html-templates/dashboard-template.html" *abstract5-home*)
+				    ;; FIXME: use concrete5's translation
+				    :return-to-website (translate "Return to Website")
+				    :help (translate "Help")
+				    :sign-out (translate "Sign Out"))))
   pathname)
+
+
+;;
+;; /help/
+;;
+(site-function http-request-using-uri (pathname)
+  (declare (ignore pathname))
+  ;; http-request returns several vlues. Use first one only
+  (nth-value 0 (drakma:http-request (get-env-value :uri))))
 
 ;;; HTTP-REPL.LISP ends here

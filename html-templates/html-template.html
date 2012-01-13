@@ -12,16 +12,5 @@
     <script type='text/javascript' src='<!-- TMPL_VAR js-file -->'></script> <!-- /TMPL_LOOP -->
     <!-- TMPL_CALL extra-header -->
   </head>
-  <body>
-    <div id='ccm-logo'><img src='<!-- TMPL_VAR site-logo -->' width='49' height='49' alt='<!-- TMPL_VAR site-logo-alt -->' /></div>
-    <div id='ccm-theme-wrapper'>
-      <!-- TMPL_IF errors -->
-      <ul class='ccm-error'>
-	<!-- TMPL_LOOP errors -->
-	<li><!-- TMPL_VAR error --></li>
-	<!-- /TMPL_LOOP -->
-      </ul>
-      <!-- /TMPL_IF -->
-    </div>
-  </body>
+  <!-- TMPL_INCLUDE html-body -->
 </html>
