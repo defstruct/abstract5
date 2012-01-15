@@ -115,5 +115,28 @@
     `(,(subseq pathname 0 (incf end/)) ,(when (> (length pathname) end/)
 					      (subseq pathname end/)))))
 
+(defmethod positions (item (array array) &key (test #'eq) (start 0) end key from-end)
+  (loop for elem across array
+     and i from 0
+     if (and end (> i end))
+     return pos-list
+     else if (and (>= i start)
+		  (funcall test (if key (funcall key elem) elem) item))
+     collect i into pos-list
+     finally (return (if from-end
+			 (nreverse pos-list)
+			 pos-list))))
+
+(defmethod positions (item (list list) &key (test #'eq) (start 0) end key from-end)
+  (loop for elem in list
+     and i from 0
+     if (and end (> i end))
+     return pos-list
+     else if (and (>= i start)
+		  (funcall test (if key (funcall key elem) elem) item))
+     collect i into pos-list
+     finally (return (if from-end
+			 (nreverse pos-list)
+			 pos-list))))
 
 ;;; UTILS.LISP ends here
