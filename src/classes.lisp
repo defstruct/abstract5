@@ -236,11 +236,11 @@
 ;;; URI and handler table
 ;;;
 (define-persistent-class repl-entry (oid-mixin)
-  ((name	 :accessor :repl-entry-name
+  ((name	 :accessor repl-entry-name
 		 :initarg :name
 		 :type text
 		 :db-kind :base)
-   (description  :accessor :repl-entry-description
+   (description  :accessor repl-entry-description
 		 :initarg :description
 		 :type text
 		 :db-kind :base)
