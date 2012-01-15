@@ -56,20 +56,20 @@
   (first (clsql:query "select current_schema()" :flatp t)))
 
 (defun set-search-path (name)
-  (clsql:execute-command (format nil "SET search_path TO ~A" name)))
+  (clsql:execute-command (format nil "SET search_path TO ~S" name)))
 
 (defun append-search-path (name)
-  (clsql:execute-command (format nil "SET search_path TO ~A,~A" name *current-db-schema*)))
+  (clsql:execute-command (format nil "SET search_path TO ~S,~S" name *current-db-schema*)))
 
 (defun create-schema (name)
-  (clsql:execute-command (format nil "CREATE SCHEMA ~A" name)))
+  (clsql:execute-command (format nil "CREATE SCHEMA ~S" name)))
 
 (defun schema-exists-p (schema-name)
   (and (clsql:query (format nil "select nspname from pg_catalog.pg_namespace where nspname='~A'" schema-name))
        t))
 
 (defun delete-schema (schema-name &key if-exists)
-  (clsql:execute-command (format nil "DROP SCHEMA~:[~; IF EXISTS~] ~A CASCADE"
+  (clsql:execute-command (format nil "DROP SCHEMA~:[~; IF EXISTS~] ~S CASCADE"
 			       if-exists
                                schema-name)))
 
