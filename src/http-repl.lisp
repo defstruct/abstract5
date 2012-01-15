@@ -186,11 +186,12 @@
 				    :title ,(format nil "~A :: ~A" (site-name *selected-site*) "Dashboard")
 				    :css-files ,css-files
 				    :js-files ,js-files
-				    :html-body (merge-pathnames "html-templates/dashboard-template.html" *abstract5-home*)
-				    ;; FIXME: use concrete5's translation
-				    :return-to-website (translate "Return to Website")
-				    :help (translate "Help")
-				    :sign-out (translate "Sign Out"))))
+				    :html-body
+				    ((,(merge-pathnames "html-templates/dashboard-template.html" *abstract5-home*)
+				       ;; FIXME: use concrete5's translation
+				       :return-to-website ,(translate "Return to Website")
+				       :help ,(translate "Help")
+				       :sign-out ,(translate "Sign Out"))))))
   pathname)
 
 
