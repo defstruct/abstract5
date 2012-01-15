@@ -65,9 +65,9 @@
   self)
 
 (defmethod shared-initialize :after ((instance oid-mixin)
-				     slot-names
+				     slot-name
 				     &rest keys)
-  (declare (ignore keys slot-names))
+  (declare (ignore keys slot-name))
   ;; Persistent class (inherited from oid-mixin) may have join + non 'oid' home-key
   ;; which is 'ownership'.
   ;; If that's the case, set the home-key slot if it is unbound
@@ -113,7 +113,7 @@
 			       :home-key site-oid
 			       :foreign-key oid
 			       :retrieval :deferred
-			       :set t))))
+			       :set nil))))
 
 ;;
 ;; ADMIN
@@ -128,7 +128,7 @@
 			       :home-key site-oid
 			       :foreign-key oid
 			       :retrieval :deferred
-			       :set t))))
+			       :set nil))))
 
 ;;
 ;; SITE
@@ -235,8 +235,16 @@
 ;;;
 ;;; URI and handler table
 ;;;
-(def-view-class repl-entry ()
-  ((status	 :accessor repl-entry-status
+(define-persistent-class repl-entry (oid-mixin)
+  ((name	 :accessor :repl-entry-name
+		 :initarg :name
+		 :type text
+		 :db-kind :base)
+   (description  :accessor :repl-entry-description
+		 :initarg :description
+		 :type text
+		 :db-kind :base)
+   (status	 :accessor repl-entry-status
 		 :initarg :status
 		 :initform :enabled
 		 :type keyword
@@ -272,7 +280,21 @@
 		 :initarg :pathname
 		 :initform nil
 		 :type text
-		 :db-kind :base)))
+		 :db-kind :base)
+   (parent-oid   :readder parent-oid :type integer :db-kind :base)
+   (parent	 :accessor repl-entry-parent :initarg :parent :db-kind :join
+		 :db-info (:join-class repl-entry
+				       :home-key parent-oid
+				       :foreign-key oid
+				       :retrieval :deferred
+				       :set nil))
+   (children	 :accessor repl-entry-children
+		 :db-kind :join
+		 :db-info (:join-class repl-entry
+				       :home-key oid
+				       :foreign-key parent-oid
+				       :retrieval :deferred
+				       :set t))))
 
 (defmethod enabled-p ((repl-entry repl-entry))
   (eq (repl-entry-status repl-entry) :enabled))

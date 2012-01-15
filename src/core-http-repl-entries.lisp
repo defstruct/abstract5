@@ -72,18 +72,33 @@
   :evaluator set-env/get-error-template
   :printer   print-standard-html-template)
 
+
+;;;;;;;;;;;;;
 (define-repl-entry ("/dashboard" "html-templates/html-template.html")
-  :evaluator eval-dashboard-request
-  :printer   print-standard-html-template)
+    :name "Dashboard"
+    :evaluator eval-dashboard-request
+    :printer   print-standard-html-template)
+
+(define-repl-entry ("/dashboard/composer" "html-templates/html-template.html")
+    :name "Composer Beta"
+    :description "Write for your site."
+    :parent "/dashboard"
+    :evaluator eval-dashboard-request
+    :printer   print-standard-html-template)
 
 (define-repl-entry ("/dashboard/sitemap" "html-templates/html-template.html")
-  :evaluator eval-dashboard-request
-  :printer   print-standard-html-template)
+    :name "Sitemap"
+    :description "Whole world at a glance."
+    :parent "/dashboard"
+    :evaluator eval-dashboard-request
+    :printer   print-standard-html-template)
 
 ;; This is an example
 (define-repl-entry ("/help")
   :env ((:uri . "http://www.concrete5.org/tools/help_overlay/"))
   :evaluator http-request-using-uri
   :printer   identity)
+
+
 
 ;;; CORE-HTTP-REPL-ENTRIES.LISP ends here

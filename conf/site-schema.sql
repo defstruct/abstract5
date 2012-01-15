@@ -21,6 +21,9 @@ CREATE SEQUENCE oid_seq
     CACHE 1;
 
 CREATE TABLE repl_entry (
+    oid integer DEFAULT nextval('oid_seq'::regclass) NOT NULL PRIMARY KEY,
+    name text,
+    description text,
     status text NOT NULL,
     uri_path text NOT NULL,
     uri_filename text,
@@ -29,5 +32,6 @@ CREATE TABLE repl_entry (
     printer text NOT NULL,
     pathname text,
     env text NOT NULL,
+    parent_oid integer REFERENCES repl_entry(oid),
     UNIQUE(uri_path, uri_filename)
 );

@@ -41,7 +41,8 @@
   "$Id$
    Report bugs to: jongwon.choi@defstruct.com")
 
-(defmacro define-repl-entry ((uri &optional pathname) &key (if-exists :error) env reader evaluator printer)
+(defmacro define-repl-entry ((uri &optional pathname) &key (if-exists :error) env reader evaluator printer
+			     name description parent)
   (let ((repl-entry (gensym "REPL-ENTRY"))
 	(path (gensym "PATH"))
 	(filename (gensym "FILENAME")))
@@ -51,7 +52,12 @@
 		(cond ((eq ,if-exists :overwrite)
 		       (setf (repl-entry-reader ,repl-entry) ',reader
 			     (repl-entry-evaluator ,repl-entry) ',evaluator
-			     (repl-entry-printer ,repl-entry) ',printer)
+			     (repl-entry-printer ,repl-entry) ',printer
+			     (repl-entry-name ,repl-entry) ,name
+			     (repl-entry-description ,repl-entry) ,description)
+		       ,@(when parent
+			       `((setf (repl-entry-parent ,repl-entry)
+				       (find-repl-entry ,parent))))
 		       ,@(when env
 			       `((setf (repl-entry-env ,repl-entry) ',env)))
 		       ,@(when pathname
@@ -60,7 +66,7 @@
 		       ,repl-entry)
 		      ((eq ,if-exists :error)
 		       (error "FIXME"))
-			(t ,repl-entry))
+		      (t ,repl-entry))
 		(destructuring-bind (,path ,filename)
 		    (split-path&name ,uri)
 		  (make-db-instance 'repl-entry
@@ -72,7 +78,13 @@
 				    ,@(when pathname
 					    `(:pathname ,pathname))
 				    ,@(when env
-					    `(:env ',env))))))))
+					    `(:env ',env))
+				    ,@(when name
+					    `(:name ,name))
+				    ,@(when description
+					    `(:description ,description))
+				    ,@(when parent
+					    `(:parent ,(find-repl-entry parent)))))))))
 (defvar *repl-env*)
 
 (site-function set-env-value (key val)
@@ -191,7 +203,10 @@
 				       ;; FIXME: use concrete5's translation
 				       :return-to-website ,(translate "Return to Website")
 				       :help ,(translate "Help")
-				       :sign-out ,(translate "Sign Out"))))))
+				       :sign-out ,(translate "Sign Out")
+				       :version-string ,(translate "Version")
+				       :app-version "0.1"
+				       )))))
   pathname)
 
 

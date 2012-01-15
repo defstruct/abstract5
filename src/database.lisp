@@ -62,7 +62,7 @@
   (clsql:execute-command (format nil "SET search_path TO ~S,~S" name *current-db-schema*)))
 
 (defun create-schema (name)
-  (clsql:execute-command (format nil "CREATE SCHEMA ~S" name)))
+  (clsql:execute-command (format nil "CREATE SCHEMA ~A" name)))
 
 (defun schema-exists-p (schema-name)
   (and (clsql:query (format nil "select nspname from pg_catalog.pg_namespace where nspname='~A'" schema-name))
