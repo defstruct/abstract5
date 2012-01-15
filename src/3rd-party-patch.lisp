@@ -69,4 +69,67 @@
 (export 'text :clsql)
 (export 'text :clsql-user)
 
+;;
+;; Pool (to prevent connection mess up in multi-threads env)
+;;
+
+(in-package :clsql-postgresql-socket)
+
+(defconstant +postgres-max-connections+ 50
+  "Default value of max_connections in postgresql conf is 100.")
+(defvar *postgres-connection-count* 0)
+(defparameter *postgres-connection-pool* ())
+(defparameter *postgresql-pool-lock* (ccl:make-lock "psql-pool-lock"))
+
+(defun get-conn-from-pool ()
+  (or (ccl:with-lock-grabbed (*postgresql-pool-lock*)
+	(pop *postgres-connection-pool*))
+      ;; FIXME: error handling?
+      (unless (ccl:with-lock-grabbed (*postgresql-pool-lock*)
+		;; ignore race condition
+		(> +postgres-max-connections+ +postgres-max-connections+))
+	(destructuring-bind (host database user password port)
+	    (connection-spec *default-database*)
+	  (prog1
+	      (open-postgresql-connection :host host :port port
+					  :database database :user user
+					  :password password)
+	    (ccl:with-lock-grabbed (*postgresql-pool-lock*)
+	      (incf *postgres-connection-count*)))))))
+
+(defun push-conn-to-pool (conn)
+  (ccl:with-lock-grabbed (*postgresql-pool-lock*)
+    (push conn *postgres-connection-pool*)))
+
+(defmethod initialize-instance :after ((postgresql-socket-database postgresql-socket-database) &key)
+  (push (slot-value postgresql-socket-database 'connection) *postgres-connection-pool*)
+  (slot-makunbound postgresql-socket-database 'connection))
+
+(defmethod database-disconnect ((database postgresql-socket-database))
+  (dolist (conn *postgres-connection-pool*)
+    (close-postgresql-connection conn))
+  t)
+
+(defvar *current-db-connection*)
+
+(defmethod database-connection ((database postgresql-socket-database))
+  *current-db-connection*)
+
+(defmethod (setf database-connection) (new-value (database postgresql-socket-database))
+  (declare (ignore new-value))
+  (error "This is not an expected call in pool environment!"))
+
+(defmacro with-connection-from-pool (&body body)
+  `(progn
+     (assert (not (boundp '*current-db-connection*)))
+     (let ((*current-db-connection* (get-conn-from-pool)))
+       (unwind-protect (progn ,@body)
+	 ;; FIXME: remove unrecoverable error
+	 (push-conn-to-pool *current-db-connection*)))))
+
+;;
+;; FIXME: Make Hunchentoot workers reusable
+;; DB connection and HTTP connection is 1:1
+;;
+
 ;;; 3RD-PARTY-PATCH.LISP ends here
