@@ -109,7 +109,7 @@
     (clsql-sys:execute-command command)))
 
 (defun fix-oid-autoincrement (class-name)
-  (let ((oid-seq "oid_seq")
+  (let ((oid-seq "public.oid_seq")
 	(class (find-class class-name)))
     (flet ((maybe-set-oid-seq (slots)
 	     (bind-when (oid-slot (find 'oid slots :key #'slot-definition-name))
