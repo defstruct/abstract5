@@ -218,8 +218,8 @@
       (on-schema (schema)
 	(init-schema-sql)
 	(let ((*selected-site* self))
-	  (load (make-pathname :directory (abstract5-folder :conf)
-			       :name "common-http-repl-entries"
+	  (load (make-pathname :directory (abstract5-folder :src)
+			       :name "core-http-repl-entries"
 			       :type "lisp")))))))
 
 (defun find-site-from-subdomain-name (name)
@@ -277,18 +277,38 @@
 (defmethod enabled-p ((repl-entry repl-entry))
   (eq (repl-entry-status repl-entry) :enabled))
 
-(site-function find-repl-entry (uri)
+;;
+;; There are two cases to construct SQL expression in URI->SQL-REPL-ENTRY-WHERE:
+;;
+;; /a/b/c/d.txt -> ((/a/b/c/ . d.txt) (/a/b/c/ . nil) (/a/b/ . nil) (/a/ . nil) (/ . nil))
+;; /a/b/c/      -> ((/a/b/   . c)     (/a/b/c/ . nil) (/a/b/ . nil) (/a/ . nil) (/ . nil))
+;;
+(defun uri->sql-repl-entry-where (uri)
   (destructuring-bind (path filename)
       (split-path&name uri)
-    (let ((result (select 'repl-entry
-			  :where [or [and [= [slot-value 'repl-entry 'uri-path] path]
-					  [= [slot-value 'repl-entry 'uri-filename] filename]]
-				     [and [= [slot-value 'repl-entry 'uri-path] path]
-				          [null [slot-value 'repl-entry 'uri-filename]]]]
+    (let ((base-case (if filename
+			 [and [= [slot-value 'repl-entry 'uri-path] path]
+			      [= [slot-value 'repl-entry 'uri-filename] filename]]
+			 (let ((path-len (length path)))
+			   (when (> path-len 1)
+			     (destructuring-bind (path2 filename2)
+				 (split-path&name (subseq path 0 (1- path-len)))
+			       [and [= [slot-value 'repl-entry 'uri-path] path2]
+			            [= [slot-value 'repl-entry 'uri-filename] filename2]]))))))
+      (loop for pos in (positions #\/ path :test #'char= :from-end t)
+	 collect [and [= [slot-value 'repl-entry 'uri-path] (subseq path 0 (1+ pos))]
+			       [null [slot-value 'repl-entry 'uri-filename]]]
+	 into all-cases
+	 finally (return (apply #'clsql-sys:sql-operation 'or (cons base-case all-cases)))))))
+
+
+(site-function find-repl-entry (uri)
+  (let ((result (select 'repl-entry
+			  :where (uri->sql-repl-entry-where uri)
 			  :flatp t
 			  :order-by [slot-value 'repl-entry 'uri-filename])))
-      ;; Because of order-by, first match will be right one.
-      (values (first result) filename))))
+    ;; Because of order-by, first match will be right one.
+    (first result)))
 
 #|
 (init-public-sql)
