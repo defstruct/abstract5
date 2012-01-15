@@ -57,8 +57,9 @@
 		       real-remote-addr ,(hunchentoot:real-remote-addr request)
 		       user-agent ,(hunchentoot:user-agent )
 		       ))
-  (with-site-context (site (request->subdomain request))
-    (http-read-eval-print-loop)))
+  (clsql-postgresql-socket::with-connection-from-pool
+    (with-site-context (site (request->subdomain request))
+      (http-read-eval-print-loop))))
 
 (defun main ()
   ;; check config file. Load it or start installation web page
@@ -69,7 +70,8 @@
   ;; timezone, session,
   ;; FIXME: read from config file
   (clsql-sys:connect '(#P"/var/run/postgresql/.s.PGSQL.5432" "abstract5" "jc" nil 5432) :encoding :utf-8)
-  (init-public-sql)
+  (clsql-postgresql-socket::with-connection-from-pool
+    (init-public-sql))
   (setf hunchentoot:*hunchentoot-default-external-format* hunchentoot::+utf-8+)
   (hunchentoot:start (make-instance 'hunchentoot:acceptor :port 8080)))
 
