@@ -43,35 +43,35 @@
 
 (defmacro define-repl-entry ((uri &optional pathname) &key (if-exists :error) env reader evaluator printer
 			     name description parent)
-  (let ((repl-entry (gensym "REPL-ENTRY"))
-	(path (gensym "PATH"))
-	(filename (gensym "FILENAME")))
-    `(progn
-       (assert (boundp '*selected-site*))
-       (bind-if (,repl-entry (find-repl-entry ,uri))
-		(cond ((eq ,if-exists :overwrite)
-		       (setf (repl-entry-reader ,repl-entry) ',reader
-			     (repl-entry-evaluator ,repl-entry) ',evaluator
-			     (repl-entry-printer ,repl-entry) ',printer
-			     (repl-entry-name ,repl-entry) ,name
-			     (repl-entry-description ,repl-entry) ,description)
-		       ,@(when parent
-			       `((setf (repl-entry-parent ,repl-entry)
-				       (find-repl-entry ,parent))))
-		       ,@(when env
-			       `((setf (repl-entry-env ,repl-entry) ',env)))
-		       ,@(when pathname
-			       `((setf (repl-entry-pathname ,repl-entry) ,pathname)))
-		       (update-records-from-instance ,repl-entry)
-		       ,repl-entry)
-		      ((eq ,if-exists :error)
-		       (error "FIXME"))
-		      (t ,repl-entry))
-		(destructuring-bind (,path ,filename)
-		    (split-path&name ,uri)
+  (let ((repl-entry (gensym "REPL-ENTRY")))
+    (destructuring-bind (path filename)
+	(split-path&name uri)
+      `(progn
+	 (assert (boundp '*selected-site*))
+	 (bind-if (,repl-entry (find-repl-entry ,uri))
+		  (cond ((eq ,if-exists :overwrite)
+			 (setf (repl-entry-reader ,repl-entry) ',reader
+			       (repl-entry-evaluator ,repl-entry) ',evaluator
+			       (repl-entry-printer ,repl-entry) ',printer
+			       (repl-entry-name ,repl-entry) ,name
+			       (repl-entry-description ,repl-entry) ,description)
+			 ,@(when parent
+				 `((setf (repl-entry-parent ,repl-entry)
+					 (find-repl-entry ,parent))))
+			 ,@(when env
+				 `((setf (repl-entry-env ,repl-entry) ',env)))
+			 ,@(when pathname
+				 `((setf (repl-entry-pathname ,repl-entry) ,pathname)))
+			 (update-records-from-instance ,repl-entry)
+			 ,repl-entry)
+			((eq ,if-exists :error)
+			 (error "FIXME"))
+			(t ,repl-entry))
 		  (make-db-instance 'repl-entry
 				    :uri-path ,path
-				    :uri-filename ,filename
+				    ,@(when filename
+					    `(:uri-filename ,filename))
+
 				    :reader ',reader
 				    :evaluator ',evaluator
 				    :printer ',printer
@@ -127,7 +127,10 @@
 							   repl-entry-pathname
 							   (subseq (script-name*) (length repl-entry-uri-path))))
 						  (t (funcall repl-entry-reader))))))
-	;;(print `(eval-args ,eval-args ))
+	#+XXX
+	(print `(eval-args ,eval-args ,repl-entry-pathname ,(format nil "~A~A"
+							   repl-entry-pathname
+							   (subseq (script-name*) (length repl-entry-uri-path)))))
 	(cond (eval-args
 	       (let ((eval-result (if repl-entry-evaluator
 				      (multiple-value-list (apply repl-entry-evaluator eval-args))

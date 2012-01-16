@@ -166,9 +166,12 @@
 #.(clsql-sys:locally-enable-sql-reader-syntax)
 
 (defun find-persistent-object (oid &key refresh)
-  (let ((pobj (first (select 'persistent-object :where [= [oid] oid] :flatp t))))
-    (on-schema ((persistent-object-schema pobj))
-      (first (select (persistent-object-class pobj) :where [= [oid] oid] :flatp t :refresh refresh)))))
+  (let ((pobj-record (first (select [oid] [schema] [class] :from [public pobj] :where [= [oid] oid] :flatp t))))
+    (when pobj-record
+      (destructuring-bind (oid schema class)
+	  pobj-record
+	(on-schema ((format nil "~S" schema))
+	  (first (select (find-symbol class :abstract5) :where [= [oid] oid] :flatp t :refresh refresh)))))))
 
 #.(clsql-sys:locally-disable-sql-reader-syntax)
 

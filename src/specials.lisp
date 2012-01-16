@@ -103,7 +103,8 @@
 
 (defmacro with-site-context ((var domain) &body body)
   `(bind-if (*selected-site* (find-site-from-subdomain-name ,domain))
-	    (let ((,var *selected-site*))
+	    (let ((,var *selected-site*)
+		  (*package* (find-package :abstract5)))
 	      (on-schema ((site-db-schema *selected-site*))
 		,@body))
 	    (error 'site-not-found :domain ,domain)))

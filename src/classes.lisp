@@ -178,13 +178,9 @@
 			       :name "core-http-repl-entries"
 			       :type "lisp")))))))
 
-#+OLD
- (defun find-site-from-subdomain-name (name)
-   (using-public-db-cache
-     (find-persistent-object 'site
-			     (site-oid (first (select 'subdomain :where [= [name] name] :flatp t))))))
- (defun find-site-from-subdomain-name (name)
-  (find-persistent-object (site-oid (first (select 'subdomain :where [= [name] name] :flatp t)))))
+(defun find-site-from-subdomain-name (name)
+  (using-public-db-cache
+    (find-persistent-object (site-oid (first (select 'subdomain :where [= [name] name] :flatp t))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -215,7 +211,6 @@
 		 :db-constraints (:not-null))
    (uri-filename :accessor repl-entry-uri-filename
 		 :initarg :uri-filename
-		 :initform nil
 		 :type text
 		 :db-kind :base)
    (reader	 :accessor repl-entry-reader
@@ -237,7 +232,6 @@
 		 :db-kind :base)
    (pathname	 :accessor repl-entry-pathname
 		 :initarg :pathname
-		 :initform nil
 		 :type text
 		 :db-kind :base)
    (parent-oid   :readder parent-oid :type integer :db-kind :base)
@@ -278,7 +272,7 @@
 			            [= [slot-value 'repl-entry 'uri-filename] filename2]]))))))
       (loop for pos in (positions #\/ path :test #'char= :from-end t)
 	 collect [and [= [slot-value 'repl-entry 'uri-path] (subseq path 0 (1+ pos))]
-			       [null [slot-value 'repl-entry 'uri-filename]]]
+		      [null [slot-value 'repl-entry 'uri-filename]]]
 	 into all-cases
 	 finally (return (apply #'clsql-sys:sql-operation 'or (cons base-case all-cases)))))))
 
