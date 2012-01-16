@@ -108,20 +108,129 @@
   (dolist (command *schema-sql-command-list*)
     (clsql-sys:execute-command command)))
 
-(defun fix-oid-autoincrement (class-name)
-  (let ((oid-seq "public.oid_seq")
-	(class (find-class class-name)))
-    (flet ((maybe-set-oid-seq (slots)
-	     (bind-when (oid-slot (find 'oid slots :key #'slot-definition-name))
-	       (setf (clsql-sys::view-class-slot-autoincrement-sequence oid-slot) oid-seq))))
-      ;; NB: CLSQL uses two different kind of slots (not sure why)
-      (maybe-set-oid-seq (clsql-sys::ordered-class-slots class))
-      (maybe-set-oid-seq (clsql-sys::keyslots-for-class class)))))
+;;
+;; OID-MIXIN
+;;
+
+(defclass persistent-class (clsql-sys::standard-db-class)
+  ())
+
+;;
+;; All persistent object book keeping table
+;;
+(def-view-class pobject ()
+  ((oid :accessor persistent-object-oid :db-kind :key :type integer :db-constraints (:not-null))
+   (schema :reader persistent-object-schema :init-arg :schema :db-kind :base :type text)
+   (class :reader persistent-object-class :init-arg :class :db-kind :base :type symbol)))
+
+(def-view-class persistent-object (clsql-sys::standard-db-object)
+  ((oid :accessor persistent-object-oid :db-kind :key :type integer :db-constraints (:not-null))
+   (caches :reader persistent-object-caches
+	   :allocation :class
+	   :initform (tg:make-weak-hash-table :test #'equal :weakness :value)
+	   :db-kind :virtual))
+  (:metaclass persistent-class))
+
+(defmethod print-object ((self persistent-object) stream)
+  (print-unreadable-object (self stream :type t :identity t)
+    (princ (if (slot-boundp self 'oid)
+	       (persistent-object-oid self)
+	       "unbound")
+	   stream))
+  self)
+
+(defmethod shared-initialize :after ((instance persistent-object)
+				     slot-name
+				     &rest keys)
+  (declare (ignore keys slot-name))
+  ;; Persistent class (inherited from oid-mixin) may have join + non 'oid' home-key
+  ;; which is 'ownership'.
+  ;; If that's the case, set the home-key slot if it is unbound
+  ;; and the join slot has value.
+  (let ((all-slots (clsql-sys::ordered-class-slots (class-of instance))))
+    (dolist (slot all-slots)
+      (let ((slot-name (slot-definition-name slot)))
+	(bind-when (join-value (and (typep instance 'persistent-object)
+				    (eq (clsql-sys::view-class-slot-db-kind slot) :join)
+				    (slot-boundp instance slot-name)
+				    (slot-value instance slot-name)))
+	  (let* ((db-info (clsql-sys::view-class-slot-db-info slot))
+		 (join-id-slot-name (gethash :home-key db-info)))
+	    ;; when it is ownership...
+	    (when (and (not (eq join-id-slot-name 'oid))
+		       (not (slot-boundp instance join-id-slot-name) )
+		       (eq (gethash :foreign-key db-info) 'oid))
+	      (setf (slot-value instance join-id-slot-name)
+		    (persistent-object-oid join-value)))))))))
+
+#.(clsql-sys:locally-enable-sql-reader-syntax)
+
+(defun find-persistent-object (oid &key refresh)
+  (let ((pobj (first (select 'persistent-object :where [= [oid] oid] :flatp t))))
+    (on-schema ((persistent-object-schema pobj))
+      (first (select (persistent-object-class pobj) :where [= [oid] oid] :flatp t :refresh refresh)))))
+
+#.(clsql-sys:locally-disable-sql-reader-syntax)
 
 (defmacro define-persistent-class (name (&rest super-classes) &body body)
  `(prog1
-      (def-view-class ,name (,@super-classes)
-	,@body)
-    (fix-oid-autoincrement ',name)))
+      (def-view-class ,name (persistent-object ,@super-classes)
+	,@body
+	(:metaclass persistent-class))))
+
+(in-package #:clsql-sys)
+
+;;
+;; 1. (view-class-table (view-table view-class)) -> (view-class-table (class-name view-class))
+;; 2. No normalization
+;; 3. PK slot is 'oid' and no use.
+;; 4. no slots with defaults
+;;
+(defun custom-insert-records (obj slots view-class-table)
+  (loop for slot in slots
+     collect (sql-escape (view-class-slot-column slot))
+     into attributes
+     collect (slot-value obj (slot-definition-name slot))
+     into values
+     finally (return
+	       (abstract5::exec-stored-function :insert_pobj
+						(if (boundp 'abstract5::*current-db-schema*)
+						    abstract5::*current-db-schema*
+						    "public")
+						(symbol-name view-class-table)
+						;; into
+						(sql-escape view-class-table)
+						;; attributes
+						(format nil " (~{~A, ~} oid) " attributes)
+						;; values
+						(format nil " (~{'~A', ~}" values)))))
+
+(defmethod update-records-from-instance ((obj abstract5::persistent-object)
+                                         &key database this-class)
+  (let ((database (or database (view-database obj) *default-database*)))
+    (flet ((slot-storedp (slot)
+	     (and (member (view-class-slot-db-kind slot) '(:base :key))
+		  (slot-boundp obj (slot-definition-name slot)))))
+      (let* ((view-class (or this-class (class-of obj)))
+             (view-class-table (class-name view-class))
+	     (slots (remove-if-not #'slot-storedp (ordered-class-slots view-class))))
+	(cond ((view-database obj)
+	       (flet ((slot-value-list (slot)
+			(let ((value (slot-value obj (slot-definition-name slot))))
+			  (check-slot-type slot value)
+			  (list (sql-expression :attribute (view-class-slot-column slot))
+				(db-value-from-slot slot value database)))))
+		 (update-records (sql-expression :table view-class-table)
+				 :av-pairs (mapcar #'slot-value-list slots)
+				 :where (key-qualifier-for-instance
+					 obj :database database
+					 :this-class view-class)
+				 :database database)))
+	      (t
+	       (setf (abstract5::persistent-object-oid obj)
+		     (custom-insert-records obj slots view-class-table))
+	       (when (eql this-class nil)
+		 (setf (slot-value obj 'view-database) database))))))
+    (abstract5::persistent-object-oid obj)))
 
 ;;; DATABASE.LISP ends here

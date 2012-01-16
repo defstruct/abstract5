@@ -47,49 +47,8 @@
 ;;; Classes in global namespace
 ;;;
 
-;;
-;; OID-MIXIN
-;;
-(define-persistent-class oid-mixin ()
-  ((oid :reader oid :db-kind :key :type integer :db-constraints (:not-null :auto-increment))))
-
 (defgeneric customize-instance! (object)
   (:method (object) (declare (ignore object))))
-
-(defmethod print-object ((self oid-mixin) stream)
-  (print-unreadable-object (self stream :type t :identity t)
-    (princ (if (slot-boundp self 'oid)
-	       (oid self)
-	       "unbound")
-	   stream))
-  self)
-
-(defmethod shared-initialize :after ((instance oid-mixin)
-				     slot-name
-				     &rest keys)
-  (declare (ignore keys slot-name))
-  ;; Persistent class (inherited from oid-mixin) may have join + non 'oid' home-key
-  ;; which is 'ownership'.
-  ;; If that's the case, set the home-key slot if it is unbound
-  ;; and the join slot has value.
-  (let ((all-slots (clsql-sys::ordered-class-slots (class-of instance))))
-    (dolist (slot all-slots)
-      (let ((slot-name (slot-definition-name slot)))
-	(bind-when (join-value (and (typep instance 'oid-mixin)
-				    (eq (clsql-sys::view-class-slot-db-kind slot) :join)
-				    (slot-boundp instance slot-name)
-				    (slot-value instance slot-name)))
-	  (let* ((db-info (clsql-sys::view-class-slot-db-info slot))
-		 (join-id-slot-name (gethash :home-key db-info)))
-	    ;; when it is ownership...
-	    (when (and (not (eq join-id-slot-name 'oid))
-		       (not (slot-boundp instance join-id-slot-name) )
-		       (eq (gethash :foreign-key db-info) 'oid))
-	      (setf (slot-value instance join-id-slot-name)
-		    (oid join-value)))))))))
-
-(defun find-persistent-object (name oid &key refresh)
-  (first (select name :where [= [oid] oid] :flatp t :refresh refresh)))
 
 (defun make-db-instance (name &rest args)
   ;; NB: update-records-from-instance return primary key.
@@ -98,14 +57,11 @@
     (customize-instance! object)
     (with-transaction ()
       (update-records-from-instance object))
-    (if (typep object 'oid-mixin)
-	(find-persistent-object name (oid object))
-	object)))
-
+    object))
 ;;
 ;; SUBDOMAIN
 ;;
-(define-persistent-class subdomain (oid-mixin)
+(define-persistent-class subdomain ()
   ((name :reader subdomain-name :initarg :name :type text :db-kind :base :db-constraints (:not-null :unique))
    (site-oid :accessor site-oid :initarg :site-oid :type integer :db-kind :base)
    (site :accessor subdomain-site :initarg :site :db-kind :join
@@ -118,7 +74,7 @@
 ;;
 ;; ADMIN
 ;;
-(define-persistent-class admin (oid-mixin)
+(define-persistent-class admin ()
   ((name :accessor admin-name :initarg :name :type text :db-kind :base
 	 :db-constraints (:not-null))
    ;; email, phone, address, etc
@@ -133,7 +89,7 @@
 ;;
 ;; SITE
 ;;
-(define-persistent-class site (oid-mixin)
+(define-persistent-class site ()
   ((name	:reader site-name
 		:initarg :name
 		:type text
@@ -222,10 +178,13 @@
 			       :name "core-http-repl-entries"
 			       :type "lisp")))))))
 
-(defun find-site-from-subdomain-name (name)
-  (using-public-db-cache
-    (find-persistent-object 'site
-			    (site-oid (first (select 'subdomain :where [= [name] name] :flatp t))))))
+#+OLD
+ (defun find-site-from-subdomain-name (name)
+   (using-public-db-cache
+     (find-persistent-object 'site
+			     (site-oid (first (select 'subdomain :where [= [name] name] :flatp t))))))
+ (defun find-site-from-subdomain-name (name)
+  (find-persistent-object (site-oid (first (select 'subdomain :where [= [name] name] :flatp t)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -235,7 +194,7 @@
 ;;;
 ;;; URI and handler table
 ;;;
-(define-persistent-class repl-entry (oid-mixin)
+(define-persistent-class repl-entry ()
   ((name	 :accessor repl-entry-name
 		 :initarg :name
 		 :type text
