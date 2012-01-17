@@ -206,7 +206,14 @@
 				     :sign-out ,(translate "Sign Out")
 				     :version-string ,(translate "Version")
 				     :app-version "0.1"
-				     ))))
+				     ;; FIXME: add permision check
+				     :nav-list ,(loop for child in (repl-entry-children *current-repl-entry*)
+						   collect (list :active nil
+								 :href (format nil "~A~A"
+									       (repl-entry-uri-path child)
+									       (repl-entry-uri-filename child))
+								 :nav-name (repl-entry-name child)
+								 :nav-description (repl-entry-description child)))))))
   pathname)
 
 
