@@ -123,13 +123,16 @@
    (schema :reader persistent-object-schema :init-arg :schema :db-kind :base :type text)
    (class :reader persistent-object-class :init-arg :class :db-kind :base :type symbol)))
 
+(defvar *persistent-object-caches* (make-hash-table :test #'eq :weak :value))
 (def-view-class persistent-object (clsql-sys::standard-db-object)
-  ((oid :accessor persistent-object-oid :db-kind :key :type integer :db-constraints (:not-null))
-   (caches :reader persistent-object-caches
-	   :allocation :class
-	   :initform (tg:make-weak-hash-table :test #'equal :weakness :value)
-	   :db-kind :virtual))
+  ((oid :accessor persistent-object-oid :db-kind :key :type integer :db-constraints (:not-null)))
   (:metaclass persistent-class))
+
+(defmethod save-pobj-to-cache ((pobj persistent-object))
+  (setf (gethash (persistent-object-oid pobj) *persistent-object-caches*) pobj))
+
+(defmethod get-pobj-from-cache ((oid integer))
+  (gethash oid *persistent-object-caches*))
 
 (defmethod print-object ((self persistent-object) stream)
   (print-unreadable-object (self stream :type t :identity t)
@@ -166,12 +169,13 @@
 #.(clsql-sys:locally-enable-sql-reader-syntax)
 
 (defun find-persistent-object (oid &key refresh)
-  (let ((pobj-record (first (select [oid] [schema] [class] :from [public pobj] :where [= [oid] oid] :flatp t))))
-    (when pobj-record
-      (destructuring-bind (oid schema class)
-	  pobj-record
-	(on-schema ((format nil "~S" schema))
-	  (first (select (find-symbol class :abstract5) :where [= [oid] oid] :flatp t :refresh refresh)))))))
+  (or (get-pobj-from-cache oid)
+      (let ((pobj-record (first (select [oid] [schema] [class] :from [public pobj] :where [= [oid] oid] :flatp t))))
+	(when pobj-record
+	  (destructuring-bind (oid schema class)
+	      pobj-record
+	    (on-schema ((format nil "~S" schema))
+	      (first (select (find-symbol class) :where [= [oid] oid] :flatp t :refresh refresh))))))))
 
 #.(clsql-sys:locally-disable-sql-reader-syntax)
 

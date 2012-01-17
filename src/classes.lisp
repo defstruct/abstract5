@@ -128,7 +128,7 @@
 				      :retrieval :deferred
 				      :set t))
    (record-caches :reader site-record-caches
-		  :initform (tg:make-weak-hash-table :test #'equal :weakness :value)
+		  :initform (make-hash-table :test #'equal :weak :value)
 		  :db-kind :virtual)))
 
 (defmethod site-language ((site site))

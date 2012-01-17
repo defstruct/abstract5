@@ -44,12 +44,84 @@
 (in-package #:clsql-sys)
 
 ;;
+;; Patched to save and use result with abstract5's persistent objects cache
+;; ('abstract5' prefixed)
+;;
+(defun build-objects (vals sclasses immediate-join-classes sels immediate-joins database refresh flatp instances)
+  "Used by find-all to build objects."
+  (flet ((build-object (vals vclass jclasses selects immediate-selects instance)
+	   (let ((obj (when (and (not refresh) (typep vclass 'abstract5::persistent-class))
+			(abstract5::get-pobj-from-cache (nth (position 'abstract5::oid selects
+								       :key #'(lambda (sl)
+										(slot-definition-name (car sl))))
+							     vals)))))
+
+	     (unless obj
+	       (setf obj (if instance instance (make-instance (class-name vclass) :view-database database)))
+	       (let* ((db-vals (butlast vals (- (list-length vals)
+						(list-length selects))))
+		      (join-vals (subseq vals (list-length selects)))
+		      (joins (mapcar #'(lambda (c) (when c (make-instance c :view-database database)))
+				     jclasses)))
+		 ;; use refresh keyword here
+		 (setf obj (get-slot-values-from-view obj (mapcar #'car selects) db-vals))
+		 (mapc #'(lambda (jo)
+			   ;; find all immediate-select slots and join-vals for this object
+			   (let* ((jo-class (class-of jo))
+				  (slots
+				   (if (normalizedp jo-class)
+				       (class-direct-slots jo-class)
+				       (class-slots jo-class)))
+				  (pos-list (remove-if #'null
+						       (mapcar
+							#'(lambda (s)
+							    (position s immediate-selects
+								      :key #'car
+								      :test #'eq))
+							slots))))
+			     (get-slot-values-from-view jo
+							(mapcar #'car
+								(mapcar #'(lambda (pos)
+									    (nth pos immediate-selects))
+									pos-list))
+							(mapcar #'(lambda (pos) (nth pos join-vals))
+								pos-list))))
+		       joins)
+		 (mapc
+		  #'(lambda (jc)
+		      (let* ((vslots
+			      (class-slots vclass))
+			     (slot (find (class-name (class-of jc)) vslots
+					 :key #'(lambda (slot)
+						  (when (and (eq :join (view-class-slot-db-kind slot))
+							     (eq (slot-definition-name slot)
+								 (gethash :join-class (view-class-slot-db-info slot))))
+						    (slot-definition-name slot))))))
+			(when slot
+			  (setf (slot-value obj (slot-definition-name slot)) jc))))
+		  joins)
+		 (when refresh (instance-refreshed obj))))
+	     ;; Save the object
+	     (abstract5::save-pobj-to-cache obj)
+	     obj)))
+    (let* ((objects
+            (mapcar #'(lambda (sclass jclass sel immediate-join instance)
+                        (prog1
+                            (build-object vals sclass jclass sel immediate-join instance)
+                          (setf vals (nthcdr (+ (list-length sel) (list-length immediate-join))
+                                             vals))))
+                    sclasses immediate-join-classes sels immediate-joins instances)))
+      (if (and flatp (= (length sclasses) 1))
+          (car objects)
+          objects))))
+
+;;
 ;; Use weak-hash for records-cache
 ;;
 (defun (setf records-cache-results) (results targets qualifiers database)
   (unless (record-caches database)
     (setf (record-caches database)
-          (tg:make-weak-hash-table :test #'equal :weakness :value)))
+          (make-hash-table :test #'equal :weak :value)))
   (setf (gethash (compute-records-cache-key targets qualifiers)
                  (record-caches database)) results)
   results)

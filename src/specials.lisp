@@ -102,12 +102,12 @@
 (defvar *selected-site*)
 
 (defmacro with-site-context ((var domain) &body body)
-  `(bind-if (*selected-site* (find-site-from-subdomain-name ,domain))
-	    (let ((,var *selected-site*)
-		  (*package* (find-package :abstract5)))
-	      (on-schema ((site-db-schema *selected-site*))
-		,@body))
-	    (error 'site-not-found :domain ,domain)))
+  `(let ((*package* (find-package :abstract5)))
+     (bind-if (*selected-site* (find-site-from-subdomain-name ,domain))
+	      (let ((,var *selected-site*))
+		(on-schema ((site-db-schema *selected-site*))
+		  ,@body))
+	      (error 'site-not-found :domain ,domain))))
 
 (defmacro using-public-db-cache (&body body)
   ;; This only works with cached object.
