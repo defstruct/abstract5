@@ -195,9 +195,11 @@
 ;;
 (defun custom-insert-records (obj slots view-class-table)
   (loop for slot in slots
+     as value = (slot-value obj (slot-definition-name slot))
+     do (check-slot-type slot value)
      collect (sql-escape (view-class-slot-column slot))
      into attributes
-     collect (slot-value obj (slot-definition-name slot))
+     collect (db-value-from-slot slot value (or (view-database obj) *default-database*))
      into values
      finally (return
 	       (abstract5::exec-stored-function :insert_pobj

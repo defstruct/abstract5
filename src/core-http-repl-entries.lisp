@@ -74,7 +74,40 @@
 
 
 ;;;;;;;;;;;;;
+(defparameter *dashbaord-css-env*
+  (mapcar (lambda (css)
+	    (list :css-file (format nil "/css/~A" css)))
+	  '("ccm.base.css" "ccm.dashboard.css" "ccm.colorpicker.css" "ccm.menus.css"
+	    "ccm.forms.css" "ccm.search.css" "ccm.filemanager.css" "ccm.dialog.css"
+	    "jquery.rating.css" "jquery.ui.css")))
+
+(defparameter *dashbaord-js-env*
+  (mapcar (lambda (js)
+	    (list :js-file (format nil "/js/~A" js)))
+	  `("jquery.js" "ccm.base.js"
+			"jquery.ui.js" "ccm.dialog.js" "ccm.base.js" "jquery.rating.js"
+			"jquery.form.js" "ccm.ui.js" "quicksilver.js"
+			"jquery.liveupdate.js" "ccm.search.js" "ccm.filemanager.js"
+			"ccm.themes.js" "jquery.ui.js" "jquery.colorpicker.js" "tiny_mce/tiny_mce.js"
+			;; FIXME: datepicker stuff for non 'en'
+			)))
+
 (define-repl-entry ("/dashboard" "html-templates/html-template.html")
+    :env ((:html-template
+	   .
+	   (:css-files ((:CSS-FILE "/css/ccm.base.css") (:CSS-FILE "/css/ccm.dashboard.css")
+			(:CSS-FILE "/css/ccm.colorpicker.css") (:CSS-FILE "/css/ccm.menus.css")
+			(:CSS-FILE "/css/ccm.forms.css") (:CSS-FILE "/css/ccm.search.css")
+			(:CSS-FILE "/css/ccm.filemanager.css") (:CSS-FILE "/css/ccm.dialog.css")
+			(:CSS-FILE "/css/jquery.rating.css") (:CSS-FILE "/css/jquery.ui.css"))
+	   :js-files ((:JS-FILE "/js/jquery.js") (:JS-FILE "/js/ccm.base.js")
+		      (:JS-FILE "/js/jquery.ui.js") (:JS-FILE "/js/ccm.dialog.js")
+		      (:JS-FILE "/js/ccm.base.js") (:JS-FILE "/js/jquery.rating.js")
+		      (:JS-FILE "/js/jquery.form.js") (:JS-FILE "/js/ccm.ui.js")
+		      (:JS-FILE "/js/quicksilver.js") (:JS-FILE "/js/jquery.liveupdate.js")
+		      (:JS-FILE "/js/ccm.search.js") (:JS-FILE "/js/ccm.filemanager.js")
+		      (:JS-FILE "/js/ccm.themes.js") (:JS-FILE "/js/jquery.ui.js")
+		      (:JS-FILE "/js/jquery.colorpicker.js") (:JS-FILE "/js/tiny_mce/tiny_mce.js")))))
     :name "Dashboard"
     :evaluator eval-dashboard-request
     :printer   print-standard-html-template)

@@ -47,6 +47,7 @@
 ;; Patched to save and use result with abstract5's persistent objects cache
 ;; ('abstract5' prefixed)
 ;;
+
 (defun build-objects (vals sclasses immediate-join-classes sels immediate-joins database refresh flatp instances)
   "Used by find-all to build objects."
   (flet ((build-object (vals vclass jclasses selects immediate-selects instance)
@@ -128,7 +129,7 @@
 
 ;;
 ;; PostgreSql text type
-;;
+;; FIXME: remove?
 (deftype text ()
   "Postgresql varying string"
   'string)

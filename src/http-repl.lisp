@@ -41,6 +41,14 @@
   "$Id$
    Report bugs to: jongwon.choi@defstruct.com")
 
+(defun find-repl-entry-parent (parent)
+  (destructuring-bind (path file)
+      (split-path&name parent)
+    (find-if #'(lambda (entry)
+		 (and (string= (repl-entry-uri-path entry) path)
+		      (string= (repl-entry-uri-filename entry) file)))
+	     *repl-entries*)))
+
 (defmacro define-repl-entry ((uri &optional pathname) &key (if-exists :error) env reader evaluator printer
 			     name description parent)
   (let ((repl-entry (gensym "REPL-ENTRY")))
@@ -56,6 +64,7 @@
 			       (repl-entry-name ,repl-entry) ,name
 			       (repl-entry-description ,repl-entry) ,description)
 			 ,@(when parent
+				 (setf env (repl-entry-env (find-repl-entry-parent parent)))
 				 `((setf (repl-entry-parent ,repl-entry)
 					 (find-repl-entry ,parent))))
 			 ,@(when env
@@ -67,30 +76,32 @@
 			((eq ,if-exists :error)
 			 (error "FIXME"))
 			(t ,repl-entry))
-		  (make-db-instance 'repl-entry
-				    :uri-path ,path
-				    ,@(when filename
-					    `(:uri-filename ,filename))
+		  (push (make-db-instance 'repl-entry
+					  :uri-path ,path
+					  ,@(when filename
+						  `(:uri-filename ,filename))
 
-				    :reader ',reader
-				    :evaluator ',evaluator
-				    :printer ',printer
-				    ,@(when pathname
-					    `(:pathname ,pathname))
-				    ,@(when env
-					    `(:env ',env))
-				    ,@(when name
-					    `(:name ,name))
-				    ,@(when description
-					    `(:description ,description))
-				    ,@(when parent
-					    `(:parent ,(find-repl-entry parent)))))))))
+					  :reader ',reader
+					  :evaluator ',evaluator
+					  :printer ',printer
+					  ,@(when pathname
+						  `(:pathname ,pathname))
+					  ,@(when env
+						  `(:env ',env))
+					  ,@(when name
+						  `(:name ,name))
+					  ,@(when description
+						  `(:description ,description))
+					  ,@(when parent
+						  `(:parent ,(find-repl-entry parent))))
+			*repl-entries*))))))
 (defvar *repl-env*)
 
 (site-function set-env-value (key val)
   (if *repl-env*
       (bind-if (found (assoc key *repl-env*))
-	       (setf (cdr found) val)
+	       (setf (cdr (last val)) (cdr found)
+		     (cdr found) val)
 	       (push (cons key val) *repl-env*))
       (setf *repl-env* (list (cons key val)))))
 
@@ -181,26 +192,9 @@
 ;; Dashboard implementation
 ;;
 (defun eval-dashboard-request (pathname)
-  (let ((css-files (mapcar (lambda (css)
-			       (list :css-file (format nil "/css/~A" css)))
-			     '("ccm.base.css"
-			       "ccm.dashboard.css" "ccm.colorpicker.css" "ccm.menus.css"
-			       "ccm.forms.css" "ccm.search.css" "ccm.filemanager.css" "ccm.dialog.css"
-			       "jquery.rating.css" "jquery.ui.css")))
-	(js-files (mapcar (lambda (js)
-			    (list :js-file (format nil "/js/~A" js)))
-			  `("jquery.js" "ccm.base.js"
-			    "jquery.ui.js" "ccm.dialog.js" "ccm.base.js" "jquery.rating.js"
-			    "jquery.form.js" "ccm.ui.js" "quicksilver.js"
-			    "jquery.liveupdate.js" "ccm.search.js" "ccm.filemanager.js"
-			    "ccm.themes.js" "jquery.ui.js" "jquery.colorpicker.js" "tiny_mce/tiny_mce.js"
-			    ;; FIXME: datepicker stuff for non 'en'
-			    ))))
-    (set-env-value :html-template `(:html-lang ,(site-language*)
+  (set-env-value :html-template `(:html-lang ,(site-language*)
 				    :charset ,(site-encoding*)
 				    :title ,(format nil "~A :: ~A" (site-name *selected-site*) "Dashboard")
-				    :css-files ,css-files
-				    :js-files ,js-files
 				    :html-body
 				    ((,(merge-pathnames "html-templates/dashboard-template.html" *abstract5-home*)
 				       ;; FIXME: use concrete5's translation
@@ -209,7 +203,7 @@
 				       :sign-out ,(translate "Sign Out")
 				       :version-string ,(translate "Version")
 				       :app-version "0.1"
-				       )))))
+				       ))))
   pathname)
 
 

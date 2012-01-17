@@ -161,7 +161,7 @@
       (call-next-method)))
 
 (in-package :abstract5)
-
+(defvar *repl-entries*)
 (defmethod customize-instance! ((self site))
   (declare (special *schema-class-tables-in-db*))
   (let* ((site-name (site-name self))
@@ -173,7 +173,8 @@
       (create-schema schema)
       (on-schema (schema)
 	(init-schema-sql)
-	(let ((*selected-site* self))
+	(let ((*selected-site* self)
+	      (*repl-entries* nil))
 	  (load (make-pathname :directory (abstract5-folder :src)
 			       :name "core-http-repl-entries"
 			       :type "lisp")))))))
