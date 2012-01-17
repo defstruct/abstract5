@@ -108,12 +108,13 @@
 (site-function get-env-value (key)
   (cdr (assoc key *repl-env*)))
 
+(defvar *current-repl-entry*)
 (site-function http-read-eval-print-loop (&optional (uri (hunchentoot:script-name*)))
   ;; FIXME add (when (maintenance-p) (find-mvc-entry "error/504"))??
-  (let ((repl-entry (find-repl-entry uri))
+  (let ((*current-repl-entry* (find-repl-entry uri))
 	*repl-env*)
-    (when (or (null repl-entry) (not (enabled-p repl-entry)))
-      (setf repl-entry (find-repl-entry "error/404")))
+    (when (or (null *current-repl-entry*) (not (enabled-p *current-repl-entry*)))
+      (setf *current-repl-entry* (find-repl-entry "error/404")))
     (with-accessors ((repl-entry-env repl-entry-env)
 		     (repl-entry-uri-path repl-entry-uri-path)
 		     (repl-entry-uri-filename repl-entry-uri-filename)
@@ -121,14 +122,19 @@
 		     (repl-entry-reader repl-entry-reader)
 		     (repl-entry-evaluator repl-entry-evaluator)
 		     (repl-entry-printer repl-entry-printer))
-	repl-entry
+	*current-repl-entry*
       (setf *repl-env* repl-entry-env)
-      #+XXX
+      ;; Common env
+      (set-env-value :html-template `(:html-lang ,(site-language*)
+						 :charset ,(site-encoding*)
+						 :title ,(format nil "~A :: ~A"
+								 (site-name *selected-site*)
+								 (repl-entry-name *current-repl-entry*))))      #+XXX
       (print `(repl-entry-env ,repl-entry-env
-	       repl-entry-pathname ,repl-entry-pathname
-	       repl-entry-reader ,repl-entry-reader
-	       repl-entry-evaluator ,repl-entry-evaluator
-	       repl-entry-printer ,repl-entry-printer))
+			      repl-entry-pathname ,repl-entry-pathname
+			      repl-entry-reader ,repl-entry-reader
+			      repl-entry-evaluator ,repl-entry-evaluator
+			      repl-entry-printer ,repl-entry-printer))
       (let ((eval-args (multiple-value-list (cond ((and repl-entry-uri-path repl-entry-uri-filename)
 						   ;; file mapping
 						   repl-entry-pathname)
@@ -140,8 +146,8 @@
 						  (t (funcall repl-entry-reader))))))
 	#+XXX
 	(print `(eval-args ,eval-args ,repl-entry-pathname ,(format nil "~A~A"
-							   repl-entry-pathname
-							   (subseq (script-name*) (length repl-entry-uri-path)))))
+								    repl-entry-pathname
+								    (subseq (script-name*) (length repl-entry-uri-path)))))
 	(cond (eval-args
 	       (let ((eval-result (if repl-entry-evaluator
 				      (multiple-value-list (apply repl-entry-evaluator eval-args))
@@ -192,18 +198,15 @@
 ;; Dashboard implementation
 ;;
 (defun eval-dashboard-request (pathname)
-  (set-env-value :html-template `(:html-lang ,(site-language*)
-				    :charset ,(site-encoding*)
-				    :title ,(format nil "~A :: ~A" (site-name *selected-site*) "Dashboard")
-				    :html-body
-				    ((,(merge-pathnames "html-templates/dashboard-template.html" *abstract5-home*)
-				       ;; FIXME: use concrete5's translation
-				       :return-to-website ,(translate "Return to Website")
-				       :help ,(translate "Help")
-				       :sign-out ,(translate "Sign Out")
-				       :version-string ,(translate "Version")
-				       :app-version "0.1"
-				       ))))
+  (set-env-value :html-template `(:html-body
+				  ((,(merge-pathnames "html-templates/dashboard-template.html" *abstract5-home*)
+				     ;; FIXME: use concrete5's translation
+				     :return-to-website ,(translate "Return to Website")
+				     :help ,(translate "Help")
+				     :sign-out ,(translate "Sign Out")
+				     :version-string ,(translate "Version")
+				     :app-version "0.1"
+				     ))))
   pathname)
 
 
