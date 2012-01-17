@@ -72,26 +72,6 @@
   :evaluator set-env/get-error-template
   :printer   print-standard-html-template)
 
-
-;;;;;;;;;;;;;
-(defparameter *dashbaord-css-env*
-  (mapcar (lambda (css)
-	    (list :css-file (format nil "/css/~A" css)))
-	  '("ccm.base.css" "ccm.dashboard.css" "ccm.colorpicker.css" "ccm.menus.css"
-	    "ccm.forms.css" "ccm.search.css" "ccm.filemanager.css" "ccm.dialog.css"
-	    "jquery.rating.css" "jquery.ui.css")))
-
-(defparameter *dashbaord-js-env*
-  (mapcar (lambda (js)
-	    (list :js-file (format nil "/js/~A" js)))
-	  `("jquery.js" "ccm.base.js"
-			"jquery.ui.js" "ccm.dialog.js" "ccm.base.js" "jquery.rating.js"
-			"jquery.form.js" "ccm.ui.js" "quicksilver.js"
-			"jquery.liveupdate.js" "ccm.search.js" "ccm.filemanager.js"
-			"ccm.themes.js" "jquery.ui.js" "jquery.colorpicker.js" "tiny_mce/tiny_mce.js"
-			;; FIXME: datepicker stuff for non 'en'
-			)))
-
 (define-repl-entry ("/dashboard" "html-templates/html-template.html")
     :env ((:html-template
 	   .
