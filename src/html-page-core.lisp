@@ -37,46 +37,46 @@
 
 (in-package :abstract5)
 
-(defconstant +http-repl-version+ "$Revision$"
+(defconstant +html-page-core+ "$Revision$"
   "$Id$
    Report bugs to: jongwon.choi@defstruct.com")
 
-(defun find-repl-entry-parent (parent)
+(defun find-page-entry-parent (parent)
   (destructuring-bind (path file)
       (split-path&name parent)
     (find-if #'(lambda (entry)
-		 (and (string= (repl-entry-uri-path entry) path)
-		      (string= (repl-entry-uri-filename entry) file)))
-	     *repl-entries*)))
+		 (and (string= (page-entry-uri-path entry) path)
+		      (string= (page-entry-uri-filename entry) file)))
+	     *page-entries*)))
 
-(defmacro define-repl-entry ((uri &optional pathname) &key (if-exists :error) env reader evaluator printer
+(defmacro define-page-entry ((uri &optional pathname) &key (if-exists :error) env reader evaluator printer
 			     name description parent)
-  (let ((repl-entry (gensym "REPL-ENTRY")))
+  (let ((page-entry (gensym "PAGE-ENTRY")))
     (destructuring-bind (path filename)
 	(split-path&name uri)
       `(progn
 	 (assert (boundp '*selected-site*))
-	 (bind-if (,repl-entry (find-repl-entry ,uri))
+	 (bind-if (,page-entry (find-page-entry ,uri))
 		  (cond ((eq ,if-exists :overwrite)
-			 (setf (repl-entry-reader ,repl-entry) ',reader
-			       (repl-entry-evaluator ,repl-entry) ',evaluator
-			       (repl-entry-printer ,repl-entry) ',printer
-			       (repl-entry-name ,repl-entry) ,name
-			       (repl-entry-description ,repl-entry) ,description)
+			 (setf (page-entry-reader ,page-entry) ',reader
+			       (page-entry-evaluator ,page-entry) ',evaluator
+			       (page-entry-printer ,page-entry) ',printer
+			       (page-entry-name ,page-entry) ,name
+			       (page-entry-description ,page-entry) ,description)
 			 ,@(when parent
-				 (setf env (repl-entry-env (find-repl-entry-parent parent)))
-				 `((setf (repl-entry-parent ,repl-entry)
-					 (find-repl-entry ,parent))))
+				 (setf env (page-entry-env (find-page-entry-parent parent)))
+				 `((setf (page-entry-parent ,page-entry)
+					 (find-page-entry ,parent))))
 			 ,@(when env
-				 `((setf (repl-entry-env ,repl-entry) ',env)))
+				 `((setf (page-entry-env ,page-entry) ',env)))
 			 ,@(when pathname
-				 `((setf (repl-entry-pathname ,repl-entry) ,pathname)))
-			 (update-records-from-instance ,repl-entry)
-			 ,repl-entry)
+				 `((setf (page-entry-pathname ,page-entry) ,pathname)))
+			 (update-records-from-instance ,page-entry)
+			 ,page-entry)
 			((eq ,if-exists :error)
 			 (error "FIXME"))
-			(t ,repl-entry))
-		  (push (make-db-instance 'repl-entry
+			(t ,page-entry))
+		  (push (make-db-instance 'page-entry
 					  :uri-path ,path
 					  ,@(when filename
 						  `(:uri-filename ,filename))
@@ -93,66 +93,66 @@
 					  ,@(when description
 						  `(:description ,description))
 					  ,@(when parent
-						  `(:parent ,(find-repl-entry parent))))
-			*repl-entries*))))))
-(defvar *repl-env*)
+						  `(:parent ,(find-page-entry parent))))
+			*page-entries*))))))
+(defvar *page-env*)
 
 (site-function set-env-value (key val)
-  (if *repl-env*
-      (bind-if (found (assoc key *repl-env*))
+  (if *page-env*
+      (bind-if (found (assoc key *page-env*))
 	       (setf (cdr (last val)) (cdr found)
 		     (cdr found) val)
-	       (push (cons key val) *repl-env*))
-      (setf *repl-env* (list (cons key val)))))
+	       (push (cons key val) *page-env*))
+      (setf *page-env* (list (cons key val)))))
 
 (site-function get-env-value (key)
-  (cdr (assoc key *repl-env*)))
+  (cdr (assoc key *page-env*)))
 
-(defvar *current-repl-entry*)
+(defvar *current-page-entry*)
 (site-function http-read-eval-print-loop (&optional (uri (hunchentoot:script-name*)))
   ;; FIXME add (when (maintenance-p) (find-mvc-entry "error/504"))??
-  (let ((*current-repl-entry* (find-repl-entry uri))
-	*repl-env*)
-    (when (or (null *current-repl-entry*) (not (enabled-p *current-repl-entry*)))
-      (setf *current-repl-entry* (find-repl-entry "error/404")))
-    (with-accessors ((repl-entry-env repl-entry-env)
-		     (repl-entry-uri-path repl-entry-uri-path)
-		     (repl-entry-uri-filename repl-entry-uri-filename)
-		     (repl-entry-pathname repl-entry-pathname)
-		     (repl-entry-reader repl-entry-reader)
-		     (repl-entry-evaluator repl-entry-evaluator)
-		     (repl-entry-printer repl-entry-printer))
-	*current-repl-entry*
-      (setf *repl-env* repl-entry-env)
+  (let ((*current-page-entry* (find-page-entry uri))
+	*page-env*)
+    (when (or (null *current-page-entry*) (not (enabled-p *current-page-entry*)))
+      (setf *current-page-entry* (find-page-entry "error/404")))
+    (with-accessors ((page-entry-env page-entry-env)
+		     (page-entry-uri-path page-entry-uri-path)
+		     (page-entry-uri-filename page-entry-uri-filename)
+		     (page-entry-pathname page-entry-pathname)
+		     (page-entry-reader page-entry-reader)
+		     (page-entry-evaluator page-entry-evaluator)
+		     (page-entry-printer page-entry-printer))
+	*current-page-entry*
+      (setf *page-env* page-entry-env)
       ;; Common env
       (set-env-value :html-template `(:html-lang ,(site-language*)
 						 :charset ,(site-encoding*)
 						 :title ,(format nil "~A :: ~A"
 								 (site-name *selected-site*)
-								 (repl-entry-name *current-repl-entry*))))      #+XXX
-      (print `(repl-entry-env ,repl-entry-env
-			      repl-entry-pathname ,repl-entry-pathname
-			      repl-entry-reader ,repl-entry-reader
-			      repl-entry-evaluator ,repl-entry-evaluator
-			      repl-entry-printer ,repl-entry-printer))
-      (let ((eval-args (multiple-value-list (cond ((and repl-entry-uri-path repl-entry-uri-filename)
+								 (page-entry-name *current-page-entry*))))      #+XXX
+      (print `(page-entry-env ,page-entry-env
+			      page-entry-pathname ,page-entry-pathname
+			      page-entry-reader ,page-entry-reader
+			      page-entry-evaluator ,page-entry-evaluator
+			      page-entry-printer ,page-entry-printer))
+      (let ((eval-args (multiple-value-list (cond ((and page-entry-uri-path page-entry-uri-filename)
 						   ;; file mapping
-						   repl-entry-pathname)
-						  (repl-entry-uri-path
+						   page-entry-pathname)
+						  (page-entry-uri-path
 						   ;; dir mapping
 						   (format nil "~A~A"
-							   repl-entry-pathname
-							   (subseq (script-name*) (length repl-entry-uri-path))))
-						  (t (funcall repl-entry-reader))))))
+							   page-entry-pathname
+							   (subseq (script-name*) (length page-entry-uri-path))))
+						  (t (funcall page-entry-reader))))))
 	#+XXX
-	(print `(eval-args ,eval-args ,repl-entry-pathname ,(format nil "~A~A"
-								    repl-entry-pathname
-								    (subseq (script-name*) (length repl-entry-uri-path)))))
+	(print `(eval-args ,eval-args ,page-entry-pathname ,(format nil "~A~A"
+								    page-entry-pathname
+								    (subseq (script-name*) (length page-entry-uri-path)))))
 	(cond (eval-args
-	       (let ((eval-result (if repl-entry-evaluator
-				      (multiple-value-list (apply repl-entry-evaluator eval-args))
+	       (let ((eval-result (if page-entry-evaluator
+				      (multiple-value-list (apply page-entry-evaluator eval-args))
 				      eval-args)))
-		 (apply repl-entry-printer eval-result)))
+		 (apply page-entry-printer eval-result)))
 	      (t (http-read-eval-print-loop "error/404")))))))
 
 (defparameter *error-code->env-contructor*
@@ -205,13 +205,13 @@
 				  :version-string ,(translate "Version")
 				  :app-version "0.1"
 				  ;; FIXME: add permision check
-				  :nav-list ,(loop for child in (repl-entry-children (find-repl-entry "/dashboard"))
-						collect (list :active (eq child *current-repl-entry*)
+				  :nav-list ,(loop for child in (page-entry-children (find-page-entry "/dashboard"))
+						collect (list :active (eq child *current-page-entry*)
 							      :href (format nil "~A~A"
-									    (repl-entry-uri-path child)
-									    (repl-entry-uri-filename child))
-							      :nav-name (repl-entry-name child)
-							      :nav-description (repl-entry-description child)))))
+									    (page-entry-uri-path child)
+									    (page-entry-uri-filename child))
+							      :nav-name (page-entry-name child)
+							      :nav-description (page-entry-description child)))))
   pathname)
 
 
@@ -223,4 +223,4 @@
   ;; http-request returns several vlues. Use first one only
   (nth-value 0 (drakma:http-request (get-env-value :uri))))
 
-;;; HTTP-REPL.LISP ends here
+;;; HTML-PAGE-CORE.LISP ends here

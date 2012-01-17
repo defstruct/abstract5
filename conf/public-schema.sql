@@ -72,7 +72,7 @@ CREATE TABLE subdomain (
     site_oid integer NOT NULL REFERENCES site(oid)
 );
 
-CREATE TABLE repl_entry (
+CREATE TABLE page_entry (
     oid integer NOT NULL UNIQUE REFERENCES pobj(oid),
     name text,
     description text,
@@ -84,6 +84,6 @@ CREATE TABLE repl_entry (
     printer text NOT NULL,
     pathname text,
     env text NOT NULL,
-    parent_oid integer REFERENCES repl_entry(oid),
+    parent_oid integer REFERENCES page_entry(oid),
     UNIQUE(uri_path, uri_filename)
 );

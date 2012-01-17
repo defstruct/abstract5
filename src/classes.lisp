@@ -161,7 +161,7 @@
       (call-next-method)))
 
 (in-package :abstract5)
-(defvar *repl-entries*)
+(defvar *page-entries*)
 (defmethod customize-instance! ((self site))
   (declare (special *schema-class-tables-in-db*))
   (let* ((site-name (site-name self))
@@ -174,9 +174,9 @@
       (on-schema (schema)
 	(init-schema-sql)
 	(let ((*selected-site* self)
-	      (*repl-entries* nil))
+	      (*page-entries* nil))
 	  (load (make-pathname :directory (abstract5-folder :src)
-			       :name "core-http-repl-entries"
+			       :name "system-html-page-entries"
 			       :type "lisp")))))))
 
 (defun find-site-from-subdomain-name (name)
@@ -191,100 +191,106 @@
 ;;;
 ;;; URI and handler table
 ;;;
-(define-persistent-class repl-entry ()
-  ((name	 :accessor repl-entry-name
+(define-persistent-class page-entry ()
+  ((name	 :accessor page-entry-name
 		 :initarg :name
 		 :type text
 		 :db-kind :base)
-   (description  :accessor repl-entry-description
+   (description  :accessor page-entry-description
 		 :initarg :description
 		 :type text
 		 :db-kind :base)
-   (status	 :accessor repl-entry-status
+   (status	 :accessor page-entry-status
 		 :initarg :status
 		 :initform :enabled
 		 :type keyword
 		 :db-kind :base)
-   (uri-path	 :accessor repl-entry-uri-path
+   (uri-path	 :accessor page-entry-uri-path
 		 :initarg :uri-path
 		 :type text
 		 :db-kind :base
 		 :db-constraints (:not-null))
-   (uri-filename :accessor repl-entry-uri-filename
+   (uri-filename :accessor page-entry-uri-filename
 		 :initarg :uri-filename
 		 :type text
 		 :db-kind :base)
-   (reader	 :accessor repl-entry-reader
+   (reader	 :accessor page-entry-reader
 		 :initarg :reader
 		 :type symbol
 		 :db-kind :base)
-   (evaluator	 :accessor repl-entry-evaluator
+   (evaluator	 :accessor page-entry-evaluator
 		 :initarg :evaluator
 		 :type symbol
 		 :db-kind :base)
-   (printer	 :accessor repl-entry-printer
+   (printer	 :accessor page-entry-printer
 		 :initarg :printer
 		 :type symbol
 		 :db-kind :base)
-   (env		 :accessor repl-entry-env
+   (env		 :accessor page-entry-env
 		 :initarg :env
 		 :initform nil
 		 :type list
 		 :db-kind :base)
-   (pathname	 :accessor repl-entry-pathname
+   (pathname	 :accessor page-entry-pathname
 		 :initarg :pathname
 		 :type text
 		 :db-kind :base)
    (parent-oid   :readder parent-oid :type integer :db-kind :base)
-   (parent	 :accessor repl-entry-parent :initarg :parent :db-kind :join
-		 :db-info (:join-class repl-entry
+   (parent	 :accessor page-entry-parent :initarg :parent :db-kind :join
+		 :db-info (:join-class page-entry
 				       :home-key parent-oid
 				       :foreign-key oid
 				       :retrieval :deferred
 				       :set nil))
-   (children	 :accessor repl-entry-children
+   (children	 :accessor page-entry-children
 		 :db-kind :join
-		 :db-info (:join-class repl-entry
+		 :db-info (:join-class page-entry
 				       :home-key oid
 				       :foreign-key parent-oid
 				       :retrieval :deferred
 				       :set t))))
 
-(defmethod enabled-p ((repl-entry repl-entry))
-  (eq (repl-entry-status repl-entry) :enabled))
+(defmethod enabled-p ((page-entry page-entry))
+  (eq (page-entry-status page-entry) :enabled))
 
 ;;
-;; There are two cases to construct SQL expression in URI->SQL-REPL-ENTRY-WHERE:
+;; There are two cases to construct SQL expression in URI->SQL-PAGE-ENTRY-WHERE:
 ;;
 ;; /a/b/c/d.txt -> ((/a/b/c/ . d.txt) (/a/b/c/ . nil) (/a/b/ . nil) (/a/ . nil) (/ . nil))
 ;; /a/b/c/      -> ((/a/b/   . c)     (/a/b/c/ . nil) (/a/b/ . nil) (/a/ . nil) (/ . nil))
 ;;
-(defun uri->sql-repl-entry-where (uri)
+(defun uri->sql-page-entry-where (uri)
   (destructuring-bind (path filename)
       (split-path&name uri)
     (let ((base-case (if filename
-			 [and [= [slot-value 'repl-entry 'uri-path] path]
-			      [= [slot-value 'repl-entry 'uri-filename] filename]]
+			 [and [= [slot-value 'page-entry 'uri-path] path]
+			      [= [slot-value 'page-entry 'uri-filename] filename]]
 			 (let ((path-len (length path)))
 			   (when (> path-len 1)
 			     (destructuring-bind (path2 filename2)
 				 (split-path&name (subseq path 0 (1- path-len)))
-			       [and [= [slot-value 'repl-entry 'uri-path] path2]
-			            [= [slot-value 'repl-entry 'uri-filename] filename2]]))))))
+			       [and [= [slot-value 'page-entry 'uri-path] path2]
+			            [= [slot-value 'page-entry 'uri-filename] filename2]]))))))
       (loop for pos in (positions #\/ path :test #'char= :from-end t)
-	 collect [and [= [slot-value 'repl-entry 'uri-path] (subseq path 0 (1+ pos))]
-		      [null [slot-value 'repl-entry 'uri-filename]]]
+	 collect [and [= [slot-value 'page-entry 'uri-path] (subseq path 0 (1+ pos))]
+		      [null [slot-value 'page-entry 'uri-filename]]]
 	 into all-cases
 	 finally (return (apply #'clsql-sys:sql-operation 'or (cons base-case all-cases)))))))
 
 
-(site-function find-repl-entry (uri)
-  (let ((result (select 'repl-entry
-			  :where (uri->sql-repl-entry-where uri)
+(site-function find-page-entry (uri)
+  (let ((result (select 'page-entry
+			  :where (uri->sql-page-entry-where uri)
 			  :flatp t
-			  :order-by [slot-value 'repl-entry 'uri-filename])))
+			  :order-by [slot-value 'page-entry 'uri-filename])))
     ;; Because of order-by, first match will be right one.
     (first result)))
+
+;;
+;; Block (in concrete5 term)
+;;
+
+
 
 #|
 (init-public-sql)

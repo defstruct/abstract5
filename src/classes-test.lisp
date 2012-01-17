@@ -58,7 +58,7 @@
 (clsql:start-sql-recording)
 (let ((*SELECTED-SITE* (find-persistent-object 'site 31)))
 	     (on-schema ((site-db-schema *selected-site*))
-	      (define-repl-entry ("/dashboard")
+	      (define-page-entry ("/dashboard")
 		 :reader    read-dashboard-request
 		 :evaluator eval-dashboard-request
 		 :printer   print-dashboard-request)))
