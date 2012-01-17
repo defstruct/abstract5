@@ -198,22 +198,20 @@
 ;; Dashboard implementation
 ;;
 (defun eval-dashboard-request (pathname)
-  (set-env-value :html-template `(:html-body
-				  ((,(merge-pathnames "html-templates/dashboard-template.html" *abstract5-home*)
-				     ;; FIXME: use concrete5's translation
-				     :return-to-website ,(translate "Return to Website")
-				     :help ,(translate "Help")
-				     :sign-out ,(translate "Sign Out")
-				     :version-string ,(translate "Version")
-				     :app-version "0.1"
-				     ;; FIXME: add permision check
-				     :nav-list ,(loop for child in (repl-entry-children *current-repl-entry*)
-						   collect (list :active nil
-								 :href (format nil "~A~A"
-									       (repl-entry-uri-path child)
-									       (repl-entry-uri-filename child))
-								 :nav-name (repl-entry-name child)
-								 :nav-description (repl-entry-description child)))))))
+  (set-env-value :html-template `(;; FIXME: use concrete5's translation
+				  :return-to-website ,(translate "Return to Website")
+				  :help ,(translate "Help")
+				  :sign-out ,(translate "Sign Out")
+				  :version-string ,(translate "Version")
+				  :app-version "0.1"
+				  ;; FIXME: add permision check
+				  :nav-list ,(loop for child in (repl-entry-children (find-repl-entry "/dashboard"))
+						collect (list :active (eq child *current-repl-entry*)
+							      :href (format nil "~A~A"
+									    (repl-entry-uri-path child)
+									    (repl-entry-uri-filename child))
+							      :nav-name (repl-entry-name child)
+							      :nav-description (repl-entry-description child)))))
   pathname)
 
 

@@ -72,7 +72,7 @@
   :evaluator set-env/get-error-template
   :printer   print-standard-html-template)
 
-(define-repl-entry ("/dashboard" "html-templates/html-template.html")
+(define-repl-entry ("/dashboard" "html-templates/dashboard-template.html")
     :env ((:html-template
 	   .
 	   (:css-files ((:CSS-FILE "/css/ccm.base.css") (:CSS-FILE "/css/ccm.dashboard.css")
@@ -92,14 +92,14 @@
     :evaluator eval-dashboard-request
     :printer   print-standard-html-template)
 
-(define-repl-entry ("/dashboard/composer" "html-templates/html-template.html")
+(define-repl-entry ("/dashboard/composer" "html-templates/dashboard-template.html")
     :name "Composer Beta"
     :description "Write for your site."
     :parent "/dashboard"
     :evaluator eval-dashboard-request
     :printer   print-standard-html-template)
 
-(define-repl-entry ("/dashboard/sitemap" "html-templates/html-template.html")
+(define-repl-entry ("/dashboard/sitemap" "html-templates/dashboard-template.html")
     :name "Sitemap"
     :description "Whole world at a glance."
     :parent "/dashboard"
@@ -111,7 +111,5 @@
   :env ((:uri . "http://www.concrete5.org/tools/help_overlay/"))
   :evaluator http-request-using-uri
   :printer   identity)
-
-
 
 ;;; CORE-HTTP-REPL-ENTRIES.LISP ends here
