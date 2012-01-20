@@ -235,7 +235,7 @@
 		 :initarg :pathname
 		 :type text
 		 :db-kind :base)
-   (parent-oid   :readder parent-oid :type integer :db-kind :base)
+   (parent-oid   :reader parent-oid :type integer :db-kind :base)
    (parent	 :accessor page-entry-parent :initarg :parent :db-kind :join
 		 :db-info (:join-class page-entry
 				       :home-key parent-oid
@@ -245,6 +245,17 @@
    (children	 :accessor page-entry-children
 		 :db-kind :join
 		 :db-info (:join-class page-entry
+				       :home-key oid
+				       :foreign-key parent-oid
+				       :retrieval :deferred
+				       :set t))
+   (area-template :accessor page-entry-area-template
+		  :initarg :area-template
+		  :type text
+		  :db-kind :base)
+   (blocks	 :accessor page-entry-blocks
+		 :db-kind :join
+		 :db-info (:join-class block
 				       :home-key oid
 				       :foreign-key parent-oid
 				       :retrieval :deferred
@@ -289,8 +300,35 @@
 ;;
 ;; Block (in concrete5 term)
 ;;
-
-
+(define-persistent-class block ()
+  ((name	 :accessor block-name
+		 :initarg :name
+		 :type text
+		 :db-kind :base)
+   (description  :accessor block-description
+		 :initarg :description
+		 :type text
+		 :db-kind :base)
+   (content	 :accessor block-content
+		 :initarg :content
+		 :type text
+		 :db-kind :base)
+   ;; context+evaluator => pathname, plan HTML, etc
+   (evaluator :accessor block-evaluator
+	      :initarg :evaluator
+	      :type symbol
+	      :db-kind :base)
+   (parent-oid   :reader parent-oid
+		 :type integer
+		 :db-kind :base)
+   (parent	 :accessor block-parent
+		 :initarg :parent
+		 :db-kind :join
+		 :db-info (:join-class page-entry
+				       :home-key parent-oid
+				       :foreign-key oid
+				       :retrieval :deferred
+				       :set nil))))
 
 #|
 (init-public-sql)

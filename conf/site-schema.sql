@@ -42,6 +42,16 @@ CREATE TABLE page_entry (
     printer text NOT NULL,
     pathname text,
     env text NOT NULL,
+    area_template text,
     parent_oid int8 REFERENCES page_entry(oid),
     UNIQUE(uri_path, uri_filename)
+);
+
+CREATE TABLE block (
+    oid integer NOT NULL UNIQUE REFERENCES public.pobj(oid),
+    name text,
+    description text,
+    content text NOT NULL,
+    evaluator text NOT NULL,
+    parent_oid int8 REFERENCES page_entry(oid)
 );

@@ -48,7 +48,7 @@
 		 (and (string= (page-entry-uri-path entry) path)
 		      (string= (page-entry-uri-filename entry) file)))
 	     *page-entries*)))
-
+#+XXX
 (defmacro define-page-entry ((uri &optional pathname) &key (if-exists :error) env reader evaluator printer
 			     name description parent)
   (let ((page-entry (gensym "PAGE-ENTRY")))
@@ -95,6 +95,48 @@
 					  ,@(when parent
 						  `(:parent ,(find-page-entry parent))))
 			*page-entries*))))))
+
+(defmacro define-page-entry ((uri &optional pathname) &key env reader evaluator printer
+				  name description parent area-template content-blocks)
+  (let ((page-entry (gensym "PAGE-ENTRY")))
+    (destructuring-bind (path filename)
+	(split-path&name uri)
+      `(progn
+	 (assert (boundp '*selected-site*))
+	 (when (find-page-entry ,uri)
+	   (error "Page entry already exists: ~A " uri))
+	 (let* ((,page-entry (make-db-instance 'page-entry
+					       :uri-path ,path
+					       ,@(when filename
+						       `(:uri-filename ,filename))
+
+					       :reader ',reader
+					       :evaluator ',evaluator
+					       :printer ',printer
+					       ,@(when pathname
+						       `(:pathname ,pathname))
+					       ,@(when env
+						       `(:env ',env))
+					       ,@(when name
+						       `(:name ,name))
+					       ,@(when description
+						       `(:description ,description))
+					       ,@(when parent
+						       (bind-when (parent (find parent *page-entries*
+										:key #'page-entry-uri-path
+										:test #'string=))
+							 `(:parent ,parent
+								   ,@(when pathname
+									   `(:uri-filename ,(page-entry-uri-filename parent) ,parent)))))
+					       ,@(when area-template
+						       `(:area-template ,area-template)))))
+	   ,@(when content-blocks
+		   `((progn
+		       (mapcar (lambda (def)
+				 (apply make-db-instance 'block :parent-oid (oid ,page-entry) def))
+			       ,content-blocks))))
+	   (push ,page-entry *page-entries*))))))
+
 (defvar *page-env*)
 
 (site-function set-env-value (key val)
@@ -211,7 +253,9 @@
 									    (page-entry-uri-path child)
 									    (page-entry-uri-filename child))
 							      :nav-name (page-entry-name child)
-							      :nav-description (page-entry-description child)))))
+							      :nav-description (page-entry-description child)))
+				  ;; This is kind of area and blocks
+				  :dashboard-inner-block ,(print-blocks *current-page-entry*)))
   pathname)
 
 
@@ -222,5 +266,10 @@
   (declare (ignore pathname))
   ;; http-request returns several vlues. Use first one only
   (nth-value 0 (drakma:http-request (get-env-value :uri))))
+
+;;
+;; /dashboard block
+;;
+;;(defu
 
 ;;; HTML-PAGE-CORE.LISP ends here
