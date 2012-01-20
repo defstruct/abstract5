@@ -43,12 +43,14 @@ CREATE TABLE page_entry (
     pathname text,
     env text NOT NULL,
     area_template text,
+    area_template_key text,
     parent_oid int8 REFERENCES page_entry(oid),
     UNIQUE(uri_path, uri_filename)
 );
 
 CREATE TABLE block (
     oid integer NOT NULL UNIQUE REFERENCES public.pobj(oid),
+    id text,
     name text,
     description text,
     content text NOT NULL,

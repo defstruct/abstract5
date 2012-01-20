@@ -85,6 +85,7 @@ CREATE TABLE page_entry (
     pathname text,
     env text NOT NULL,
     area_template text,
+    area_template_key text,
     parent_oid integer REFERENCES page_entry(oid),
     UNIQUE(uri_path, uri_filename)
 );
@@ -92,6 +93,7 @@ CREATE TABLE page_entry (
 
 CREATE TABLE block (
     oid integer NOT NULL UNIQUE REFERENCES pobj(oid),
+    id text,
     name text,
     description text,
     content text NOT NULL,

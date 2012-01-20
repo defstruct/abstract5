@@ -253,6 +253,10 @@
 		  :initarg :area-template
 		  :type text
 		  :db-kind :base)
+   (area-template-key :accessor page-entry-area-template-key
+		      :initarg :area-template-key
+		      :type keyword
+		      :db-kind :base)
    (blocks	 :accessor page-entry-blocks
 		 :db-kind :join
 		 :db-info (:join-class block
@@ -301,7 +305,11 @@
 ;; Block (in concrete5 term)
 ;;
 (define-persistent-class block ()
-  ((name	 :accessor block-name
+  ((id		:accessor block-id
+		:initarg :id
+		:type keyword
+		:db-kind :base)
+   (name	 :accessor block-name
 		 :initarg :name
 		 :type text
 		 :db-kind :base)
@@ -319,6 +327,7 @@
 	      :type symbol
 	      :db-kind :base)
    (parent-oid   :reader parent-oid
+		 :initarg :parent-oid
 		 :type integer
 		 :db-kind :base)
    (parent	 :accessor block-parent
