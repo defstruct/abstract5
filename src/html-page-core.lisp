@@ -352,6 +352,11 @@
   (print-html-template filename `(:view-all	,(translate "View all")
 				  :no-news ,(translate "There are no notifications.")
 				  ;; when more than 1 emit this key-val
-				  :view-n-total ,(translate "View all ~D notifications &gt;" 10))))
+				  :view-n-total ,(translate "View all ~D notifications >" 10))))
+
+(site-function eval-dashboard-notes (filename)
+  (print-html-template filename `(:notes-desc ,(translate "Write notes to yourself using the text area below.")
+				  :my-notes "FIXME: This is from DB"
+				  :save ,(translate "Save"))))
 
 ;;; HTML-PAGE-CORE.LISP ends here
