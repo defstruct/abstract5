@@ -105,7 +105,7 @@
       `(let (,page-entry)
 	 (assert (boundp '*selected-site*))
 	 (when (find-page-entry ,uri)
-	   (error "Page entry already exists: ~A " uri))
+	   (error "Page entry already exists: ~A " ,uri))
 	 (setf ,page-entry (make-db-instance 'page-entry
 					     :uri-path ,path
 					     ,@(when filename
@@ -334,5 +334,24 @@
 			 :today ,(translate "today")
 			 :total-form-submissions 9
 			 :total ,(translate "total"))))
+
+(site-function eval-dashboard-statistics (filename)
+  ;; TBD with Raphael?
+  (print-html-template filename ()))
+
+(site-function eval-dashboard-help (filename)
+  ;; TBD with Raphael?
+  (print-html-template filename `(:search-doc	,(translate "Search Documentation")
+				  :search	,(translate "Search")
+				  :full-doc     ,(translate "Full Documentation")
+				  ;; FIXME: concrete5 -> abstract5
+				  :full-doc-desc ,(translate "Full documentation is available <a href='http://www.concrete5.org/docs/'>at Concrete5.org</a>."))))
+
+(site-function eval-dashboard-news (filename)
+  ;; TBD with Raphael?
+  (print-html-template filename `(:view-all	,(translate "View all")
+				  :no-news ,(translate "There are no notifications.")
+				  ;; when more than 1 emit this key-val
+				  :view-n-total ,(translate "View all ~D notifications &gt;" 10))))
 
 ;;; HTML-PAGE-CORE.LISP ends here

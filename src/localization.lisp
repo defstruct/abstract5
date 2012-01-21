@@ -41,8 +41,10 @@
   "$Id$
    Report bugs to: jongwon.choi@defstruct.com")
 
-(defun translate (string)
+(defun translate (string &rest args)
   ;; FIXME: Fix when concrete5 gets languages
-  string)
+  (if args
+      (format nil string args)
+      string))
 
 ;;; LOCALIZATION.LISP ends here
