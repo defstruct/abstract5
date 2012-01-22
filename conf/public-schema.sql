@@ -59,8 +59,6 @@ CREATE TABLE admin (
 
 CREATE TABLE site (
     oid integer NOT NULL UNIQUE REFERENCES pobj(oid),
-    name text NOT NULL UNIQUE,
-    description text,
     home_folder text,
     locale text,
     db_schema text NOT NULL
@@ -98,5 +96,51 @@ CREATE TABLE block (
     description text,
     content text NOT NULL,
     evaluator text NOT NULL,
-    parent_oid int8 REFERENCES page_entry(oid)
+    parent_oid integer REFERENCES page_entry(oid)
+);
+
+CREATE TABLE users (
+    oid			integer NOT NULL UNIQUE REFERENCES pobj(oid),
+    name		text NOT NULL,
+    email		text NOT NULL,
+    password		text NOT NULL,
+    password_salt	text NOT NULL,
+    active_p		boolean NOT NULL DEFAULT FALSE,
+    validated_p		boolean NOT NULL DEFAULT FALSE,
+    join_date		integer NOT NULL,
+    avatar_p		boolean NOT NULL DEFAULT FALSE,
+    last_online		integer NOT NULL,
+    last_login		integer NOT NULL,
+    prev_login		integer NOT NULL,
+    num_logins		integer NOT NULL
+);
+
+CREATE TABLE address (
+    addressable_oid	integer NOT NULL,
+    street_number	text NOT NULL,
+    street_name		text NOT NULL,
+    surburb		text NOT NULL,
+    state		text NOT NULL,
+    post_code		text NOT NULL,
+    country		text NOT NULL
+);
+CREATE INDEX IDX_address_addressable_oid on address(addressable_oid);
+
+CREATE TABLE phone (
+    callable_oid	integer NOT NULL,
+    type		text NOT NULL,
+    number		text NOT NULL
+);
+CREATE INDEX IDX_phone_callable_oid on phone(callable_oid);
+
+CREATE TABLE organisation (
+    oid integer NOT NULL UNIQUE REFERENCES pobj(oid),
+    name		text NOT NULL,
+    description		text
+);
+
+CREATE TABLE person (
+    oid integer NOT NULL UNIQUE REFERENCES pobj(oid),
+    name		text NOT NULL,
+    description		text
 );

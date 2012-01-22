@@ -79,7 +79,9 @@
 	 :db-constraints (:not-null))
    ;; email, phone, address, etc
    (site-oid :reader site-oid :type integer :db-kind :base)
-   (site :accessor admin-site :initarg :site :db-kind :join
+   (site :accessor admin-site
+	 :initarg :site
+	 :db-kind :join
 	 :db-info (:join-class site
 			       :home-key site-oid
 			       :foreign-key oid
@@ -90,16 +92,16 @@
 ;; SITE
 ;;
 (define-persistent-class site ()
-  ((name	:reader site-name
-		:initarg :name
-		:type text
-		:db-kind :base
-		:db-constraints (:not-null :unique))
-   ;; FIXME: add more
-   (description :accessor site-description
-		:initarg :description
-		:type text
-		:db-kind :base)
+  ((orgnasation-oid :accessor site-orgnasation-oid
+		    :type integer
+		    :db-kind :base)
+   (orgnasation :accessor site-orgnasation
+		:db-kind :join
+		:db-info (:join-class organisation
+			  :home-key organisation-oid
+			  :foreign-key oid
+			  :retrieval :deferred
+			  :set nil))
    (locale	:accessor site-locale
 		:initarg :locale
 		:initform "en_AU.UTF-8"		; FIXME: someday support other
@@ -338,6 +340,249 @@
 				       :foreign-key oid
 				       :retrieval :deferred
 				       :set nil))))
+;;
+;; User
+;;
+
+;;
+;; NOTE: usage of def-view-class vs define-persistent-class
+;;
+;;	def-view-class intented not for instantiation
+;;	they will be used in define-persistent-class as join classes
+;;
+(def-view-class address ()
+  ((addressable-oid	:initarg :addressable-oid
+			:type integer
+			:db-kind :base)
+   (stereet-number	:accessor address-street-number
+			:initarg :street-number
+			:type text
+			:db-kind :base)
+   (street-name		:accessor address-street-name
+			:initarg :street-name
+			:type text
+			:db-kind :base)
+   (suburb		:accessor address-suburb
+			:initarg :suburb
+			:type text
+			:db-kind :base)
+   (state		:accessor address-state
+			:initarg :state
+			:type text
+			:db-kind :base)
+   (post-code		:accessor address-post-code
+			:initarg :post-code
+			:type text
+			:db-kind :base)
+   (country		:accessor address-country
+			:initarg :country
+			:type text
+			:db-kind :base)))
+
+(def-view-class phone ()
+  ((callable-oid	:initarg :callable-oid
+			:type integer
+			:db-kind :base)
+   ;; type -> phone, fax, mobile
+   (type		:accessor phone-type
+			:initarg :phone-type
+			:type keyword
+			:db-kind :base)
+   (number		:accessor phone-number
+			:initarg :phone-number
+			:type text
+			:db-kind :base)))
+
+(define-persistent-class organisation ()
+  ;; NOTE: organisable-oid object (e.g. site)
+  ;; has a salt to encrypt all the information
+  ((name	:accessor organisation-name
+		:initarg :name
+		:type text
+		:db-kind :base
+		:db-constraints (:not-null))
+   (description	:accessor organisation-description
+		:initarg :description
+		:type text
+		:db-kind :base)
+   (addresses	:accessor organisation-addresses
+		:db-kind :join
+		:db-info (:join-class address
+			   :home-key oid
+			   :foreign-key addressable-oid
+			   :retrieval :deferred
+			   :set t))
+   (phones	:accessor organisation-phones
+		:db-kind :join
+		:db-info (:join-class phone
+			   :home-key oid
+			   :foreign-key callable-oid
+			   :retrieval :deferred
+			   :set t))
+   (primary-address-oid	:accessor organisation-primary-address-oid
+			:initarg :primary-address-oid
+			:type integer
+			:db-kind :base)
+   (primary-address	:accessor organisation-primary-address
+			:db-kind :join
+			:db-info (:join-class address
+				  :home-key primary-address-oid
+				  :foreign-key addressable-oid
+				  :retrieval :deferred
+				  :set nil))
+   (primary-phone-oid	:accessor organisation-primary-phone-oid
+			:initarg :primary-phone-oid
+			:type integer
+			:db-kind :base)
+   (primary-phone	:accessor organisation-primary-phone
+			:db-kind :join
+			:db-info (:join-class phone
+				  :home-key primary-phone-oid
+				  :foreign-key callable-oid
+				  :retrieval :deferred
+				  :set nil))))
+
+(define-persistent-class person ()
+  ;; NOTE: user-oid object (e.g. user)
+  ;; has a salt to encrypt all the information
+  ((name	:accessor person-name
+		:initarg :name
+		:type text
+		:db-kind :base
+		:db-constraints (:not-null))
+   (description	:accessor person-description
+		:initarg :description
+		:type text
+		:db-kind :base)
+   (organisation-oid :initarg :organisation-oid
+		     :type integer
+		     :db-kind :base)
+   (organisation :accessor person-organisation
+		 :db-kind :join
+		 :db-info (:join-class organisation
+			   :home-key organisable-oid
+			   :foreign-key oid
+			   :retrieval :deferred
+			   :set nil))
+   (addresses	:accessor person-addresses
+		:db-kind :join
+		:db-info (:join-class address
+			   :home-key oid
+			   :foreign-key addressable-oid
+			   :retrieval :deferred
+			   :set t))
+   (phones	:accessor person-phones
+		:db-kind :join
+		:db-info (:join-class phone
+			   :home-key oid
+			   :foreign-key callable-oid
+			   :retrieval :deferred
+			   :set t))
+   (primary-address-oid	:accessor person-primary-address-oid
+			:initarg :primary-address-oid
+			:type integer
+			:db-kind :base)
+   (primary-address	:accessor person-primary-address
+			:db-kind :join
+			:db-info (:join-class address
+				  :home-key primary-address-oid
+				  :foreign-key addressable-oid
+				  :retrieval :deferred
+				  :set nil))
+   (primary-phone-oid	:accessor person-primary-phone-oid
+			:initarg :primary-phone-oid
+			:type integer
+			:db-kind :base)
+   (primary-phone	:accessor person-primary-phone
+			:db-kind :join
+			:db-info (:join-class phone
+				  :home-key primary-phone-oid
+				  :foreign-key callable-oid
+				  :retrieval :deferred
+				  :set nil))))
+
+(define-persistent-class user ()
+  ((name	:accessor user-name
+		:initarg :name
+		:type text
+		:db-kind :base
+		:db-constraints (:not-null))
+   (truename	:accessor user-true-name
+		:initarg :true-name
+		:type text
+		:db-kind :base)
+   (email	:accessor user-email
+		:initarg :email
+		:type text
+		:db-kind :base
+		:db-constraints (:not-null))
+   (password	:accessor user-password
+		:initarg :password
+		:type text
+		:db-kind :base
+		:db-constraints (:not-null))
+   (salt :accessor user-salt		;; this will be used encrypt all the user info
+		  :initarg :password-salt
+		  :type text
+		  :db-kind :base
+		  :db-constraints (:not-null))
+   ;; not sure but possible list is:
+   (active-p	:accessor user-active-p
+		;; Use DB default instead of :initform nil
+		:type boolean
+		:db-kind :base
+		:db-constraints (:not-null))
+   (validated-p	:accessor user-validated-p
+		;; Use DB default instead of :initform nil
+		:type boolean
+		:db-kind :base
+		:db-constraints (:not-null))
+   #+FIXME
+   (full-record-p :accessor user-full-record-p
+		:initform nil
+		:type boolean
+		:db-kind :base
+		:db-constraints (:not-null))
+   (join-date	:accessor user-join-date
+		:initform (get-universal-time)
+		:type integer
+		:db-kind :base
+		:db-constraints (:not-null))
+   (avatar-p	:accessor user-avatar-p
+		;; Use DB default instead of :initform nil
+		:type boolean
+		:db-kind :base
+		:db-constraints (:not-null))
+   (last-online	:accessor user-last-online
+		:type integer
+		:db-kind :base)
+   (last-login	:accessor user-last-login
+		:type integer
+		:db-kind :base)
+   (prev-login	:accessor user-prev-login
+		:type integer
+		:db-kind :base)
+   (num-logins   :accessor user-num-logins
+		 :type integer
+		 :db-kind :base)
+   #+FIXME
+   (timezone	:accessor user-timezone
+		:type text
+		:db-kind :base)
+   #+FIXME
+   (language :accessor user-language
+	     :type text
+	     :db-kind :base)
+   (person-oid	:accessor user-person-oid
+		:type integer
+		:db-kind :base)
+   (person	:accessor user-person
+		:db-kind :join
+		:db-info (:join-class person
+			  :home-key person-oid
+			  :foreign-key oid
+			  :retrieval :deferred
+			  :set nil))))
 
 #|
 (init-public-sql)
