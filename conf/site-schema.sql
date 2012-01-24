@@ -2,23 +2,6 @@
 -- NOTE: Each command must be delimited with 2+ newlines.
 --
 
-CREATE FUNCTION insert_pobj(text, text, text, text, text) RETURNS integer
-    LANGUAGE plpgsql
-    AS $_$
-   DECLARE
-      the_schema alias for $1;
-      the_class alias for $2;
-      the_table alias for $3;
-      the_attributes alias for $4;
-      the_values alias for $5;
-      the_pobj_oid integer;
-BEGIN
-	select nextval('public.oid_seq'::regclass) into the_pobj_oid;
-        insert into public.pobj (oid, schema, class) values (the_pobj_oid, the_schema, the_class);
-        execute 'insert into ' || the_table || the_attributes || 'values' || the_values || the_pobj_oid || ')';
-        RETURN the_pobj_oid;
-END;$_$;
-
 CREATE TABLE page_entry (
     oid integer NOT NULL UNIQUE REFERENCES public.pobj(oid),
     name text,

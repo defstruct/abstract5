@@ -206,7 +206,7 @@
      collect (db-value-from-slot slot value (or (view-database obj) *default-database*))
      into values
      finally (return
-	       (abstract5::exec-stored-function :insert_pobj
+	       (abstract5::exec-stored-function :public.insert_pobj
 						(if (boundp 'abstract5::*current-db-schema*)
 						    abstract5::*current-db-schema*
 						    "public")
