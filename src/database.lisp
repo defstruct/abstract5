@@ -170,12 +170,16 @@
 
 (defun find-persistent-object (oid &key refresh)
   (or (get-pobj-from-cache oid)
-      (let ((pobj-record (first (select [oid] [schema] [class] :from [public pobj] :where [= [oid] oid] :flatp t))))
+      (let ((pobj-record (first (select [oid] [schema] [class] :from [public pobj] :where [= [pobj oid] oid] :flatp t))))
 	(when pobj-record
 	  (destructuring-bind (oid schema class)
 	      pobj-record
 	    (on-schema ((format nil "~S" schema))
-	      (first (select (find-symbol class) :where [= [oid] oid] :flatp t :refresh refresh))))))))
+	      (let ((class-symbol (find-symbol class)))
+		(first (select class-symbol
+			       :where [= (sql-expression :attribute 'oid :table class-symbol) oid]
+			       :flatp t
+			       :refresh refresh)))))))))
 
 #.(clsql-sys:locally-disable-sql-reader-syntax)
 

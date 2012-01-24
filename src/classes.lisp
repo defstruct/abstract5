@@ -64,7 +64,9 @@
 (define-persistent-class subdomain ()
   ((name :reader subdomain-name :initarg :name :type text :db-kind :base :db-constraints (:not-null :unique))
    (site-oid :accessor site-oid :initarg :site-oid :type integer :db-kind :base)
-   (site :accessor subdomain-site :initarg :site :db-kind :join
+   (site :accessor subdomain-site
+	 :initarg :site
+	 :db-kind :join
 	 :db-info (:join-class site
 			       :home-key site-oid
 			       :foreign-key oid
@@ -92,16 +94,17 @@
 ;; SITE
 ;;
 (define-persistent-class site ()
-  ((orgnasation-oid :accessor site-orgnasation-oid
-		    :type integer
-		    :db-kind :base)
-   (orgnasation :accessor site-orgnasation
-		:db-kind :join
-		:db-info (:join-class organisation
-			  :home-key organisation-oid
-			  :foreign-key oid
-			  :retrieval :deferred
-			  :set nil))
+  ((organisation-oid :accessor site-organisation-oid
+		     :type integer
+		     :db-kind :base)
+   (organisation :accessor site-organisation
+		 :initarg :organisation
+		 :db-kind :join
+		 :db-info (:join-class organisation
+				       :home-key organisation-oid
+				       :foreign-key oid
+				       :retrieval :immediate
+				       :set nil))
    (locale	:accessor site-locale
 		:initarg :locale
 		:initform "en_AU.UTF-8"		; FIXME: someday support other
@@ -132,6 +135,9 @@
    (record-caches :reader site-record-caches
 		  :initform (make-hash-table :test #'equal :weak :value)
 		  :db-kind :virtual)))
+
+(defmethod site-name ((site site))
+  (organisation-name (site-organisation site)))
 
 (defmethod site-language ((site site))
   (let* ((locale (site-locale site))
@@ -420,10 +426,10 @@
 			   :retrieval :deferred
 			   :set t))
    (primary-address-oid	:accessor organisation-primary-address-oid
-			:initarg :primary-address-oid
 			:type integer
 			:db-kind :base)
    (primary-address	:accessor organisation-primary-address
+			:initarg :primary-address
 			:db-kind :join
 			:db-info (:join-class address
 				  :home-key primary-address-oid
@@ -431,10 +437,10 @@
 				  :retrieval :deferred
 				  :set nil))
    (primary-phone-oid	:accessor organisation-primary-phone-oid
-			:initarg :primary-phone-oid
 			:type integer
 			:db-kind :base)
    (primary-phone	:accessor organisation-primary-phone
+			:initarg :primary-phone
 			:db-kind :join
 			:db-info (:join-class phone
 				  :home-key primary-phone-oid
@@ -479,10 +485,10 @@
 			   :retrieval :deferred
 			   :set t))
    (primary-address-oid	:accessor person-primary-address-oid
-			:initarg :primary-address-oid
 			:type integer
 			:db-kind :base)
    (primary-address	:accessor person-primary-address
+			:initarg :primary-address
 			:db-kind :join
 			:db-info (:join-class address
 				  :home-key primary-address-oid
@@ -490,10 +496,10 @@
 				  :retrieval :deferred
 				  :set nil))
    (primary-phone-oid	:accessor person-primary-phone-oid
-			:initarg :primary-phone-oid
 			:type integer
 			:db-kind :base)
    (primary-phone	:accessor person-primary-phone
+			:initarg :primary-phone
 			:db-kind :join
 			:db-info (:join-class phone
 				  :home-key primary-phone-oid

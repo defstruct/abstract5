@@ -41,11 +41,16 @@
   "$Id$
    Report bugs to: jongwon.choi@defstruct.com")
 
-(let* ((site (make-db-instance 'site :name "Test localhost" :description "test site"))
-       (subdomain (make-db-instance 'subdomain :name "localhost" :site site))
-       (admin (make-db-instance 'admin :name "Jong-won Choi" :site site)))
-  (list site subdomain admin))
+(clsql-postgresql-socket::with-connection-from-pool
+  (with-transaction ()
+    (let* ((site-org (make-db-instance 'organisation :name "Test localhost" :description "test site"))
+	   (*selected-site* (make-db-instance 'site :name "Test localhost" :description "test site" :organisation site-org))
+	   (subdomain (make-db-instance 'subdomain :name "localhost" :site *selected-site*)))
 
+      (on-schema ((site-db-schema *selected-site*))
+	(list *selected-site*
+	      subdomain
+	      (make-db-instance 'admin :name "Jong-won Choi" :site *selected-site*))))))
 
 
 ;;(trace (:method iNITIALIZE-INSTANCE :AROUND (CLSQL-SYS::VIEW-CLASS-DIRECT-SLOT-DEFINITION)))

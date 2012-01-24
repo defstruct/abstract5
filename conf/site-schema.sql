@@ -1,17 +1,6 @@
 --
 -- NOTE: Each command must be delimited with 2+ newlines.
 --
-CREATE FUNCTION new_schema_and_get_prev_schema(text) RETURNS text
-    LANGUAGE plpgsql
-    AS $_$
-   DECLARE
-      the_new_schema alias for $1;
-      the_old_schema TEXT;
-BEGIN
-	select current_schema() into the_old_schema;
-	execute	'set search_path to ' || the_new_schema;
-        RETURN the_old_schema;
-END;$_$;
 
 CREATE FUNCTION insert_pobj(text, text, text, text, text) RETURNS integer
     LANGUAGE plpgsql
@@ -83,6 +72,7 @@ CREATE TABLE address (
     post_code		text NOT NULL,
     country		text NOT NULL
 );
+
 CREATE INDEX IDX_address_addressable_oid on address(addressable_oid);
 
 CREATE TABLE phone (
@@ -90,16 +80,19 @@ CREATE TABLE phone (
     type		text NOT NULL,
     number		text NOT NULL
 );
-CREATE INDEX IDX_phone_callable_oid on phone(callable_oid);
 
-CREATE TABLE organisation (
-    oid integer		NOT NULL UNIQUE REFERENCES public.pobj(oid),
-    name		text NOT NULL,
-    description		text
-);
+CREATE INDEX IDX_phone_callable_oid on phone(callable_oid);
 
 CREATE TABLE person (
     oid integer		NOT NULL UNIQUE REFERENCES public.pobj(oid),
     name		text NOT NULL,
-    description		text
+    description		text,
+    primary_address_oid	integer,
+    primary_phone_oid	integer
+);
+
+CREATE TABLE admin (
+    oid integer NOT NULL UNIQUE REFERENCES public.pobj(oid),
+    name text NOT NULL,
+    site_oid integer
 );
