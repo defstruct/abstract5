@@ -590,6 +590,116 @@
 			  :retrieval :deferred
 			  :set nil))))
 
+(define-persistent-class user ()
+  ((name	:accessor user-name
+		:initarg :name
+		:type text
+		:db-kind :base
+		:db-constraints (:not-null))
+   (truename	:accessor user-true-name
+		:initarg :true-name
+		:type text
+		:db-kind :base)
+   (email	:accessor user-email
+		:initarg :email
+		:type text
+		:db-kind :base
+		:db-constraints (:not-null))
+   (password	:accessor user-password
+		:initarg :password
+		:type text
+		:db-kind :base
+		:db-constraints (:not-null))
+   (salt :accessor user-salt		;; this will be used encrypt all the user info
+		  :initarg :password-salt
+		  :type text
+		  :db-kind :base
+		  :db-constraints (:not-null))
+   ;; not sure but possible list is:
+   (active-p	:accessor user-active-p
+		;; Use DB default instead of :initform nil
+		:type boolean
+		:db-kind :base
+		:db-constraints (:not-null))
+   (validated-p	:accessor user-validated-p
+		;; Use DB default instead of :initform nil
+		:type boolean
+		:db-kind :base
+		:db-constraints (:not-null))
+   #+FIXME
+   (full-record-p :accessor user-full-record-p
+		:initform nil
+		:type boolean
+		:db-kind :base
+		:db-constraints (:not-null))
+   (join-date	:accessor user-join-date
+		:initform (get-universal-time)
+		:type integer
+		:db-kind :base
+		:db-constraints (:not-null))
+   (avatar-p	:accessor user-avatar-p
+		;; Use DB default instead of :initform nil
+		:type boolean
+		:db-kind :base
+		:db-constraints (:not-null))
+   (last-online	:accessor user-last-online
+		:type integer
+		:db-kind :base)
+   (last-login	:accessor user-last-login
+		:type integer
+		:db-kind :base)
+   (prev-login	:accessor user-prev-login
+		:type integer
+		:db-kind :base)
+   (num-logins   :accessor user-num-logins
+		 :type integer
+		 :db-kind :base)
+   #+FIXME
+   (timezone	:accessor user-timezone
+		:type text
+		:db-kind :base)
+   #+FIXME
+   (language :accessor user-language
+	     :type text
+	     :db-kind :base)
+   (person-oid	:accessor user-person-oid
+		:type integer
+		:db-kind :base)
+   (person	:accessor user-person
+		:db-kind :join
+		:db-info (:join-class person
+			  :home-key person-oid
+			  :foreign-key oid
+			  :retrieval :deferred
+			  :set nil))))
+
+(define-persistent-class theme ()
+  ;; css list
+  ((folder	:accessor theme-folder
+		:initarg :folder
+		:type text
+		:db-kind :base
+		:db-constraints (:not-null))
+   (thumnail	:accessor theme-thumnail
+		:initarg :thumnail
+		:initform "thumnail.png"
+		:type text
+		:db-kind :base
+		:db-constraints (:not-null))
+   (name	:accessor theme-name
+		:initarg :name
+		:type text
+		:db-kind :base
+		:db-constraints (:not-null))
+   (description	:accessor theme-description
+		:initarg :description
+		:type text
+		:db-kind :base)
+   (header.html)
+   (css-files)
+   (footer.html)
+   (default.html)))
+
 #|
 (init-public-sql)
 (main)
@@ -603,15 +713,7 @@
 |#
 
 #+FIXME
-(def-view-class theme ()
-  ((thumnail)
-   (name)
-   (description)
-   (header.html)
-   (css-files)
-   (footer.html)
-   (default.html))
-  )
+
 
 #.(clsql-sys:locally-disable-sql-reader-syntax)
 
