@@ -610,11 +610,11 @@
 		:type text
 		:db-kind :base
 		:db-constraints (:not-null))
-   (salt :accessor user-salt		;; this will be used encrypt all the user info
-		  :initarg :password-salt
-		  :type text
-		  :db-kind :base
-		  :db-constraints (:not-null))
+   (salt :accessor user-salt ;; this will be used encrypt all the user info
+	 :initarg :password-salt
+	 :type text
+	 :db-kind :base
+	 :db-constraints (:not-null))
    ;; not sure but possible list is:
    (active-p	:accessor user-active-p
 		;; Use DB default instead of :initform nil
@@ -628,10 +628,10 @@
 		:db-constraints (:not-null))
    #+FIXME
    (full-record-p :accessor user-full-record-p
-		:initform nil
-		:type boolean
-		:db-kind :base
-		:db-constraints (:not-null))
+		  :initform nil
+		  :type boolean
+		  :db-kind :base
+		  :db-constraints (:not-null))
    (join-date	:accessor user-join-date
 		:initform (get-universal-time)
 		:type integer
@@ -668,10 +668,20 @@
    (person	:accessor user-person
 		:db-kind :join
 		:db-info (:join-class person
-			  :home-key person-oid
-			  :foreign-key oid
-			  :retrieval :deferred
-			  :set nil))))
+				      :home-key person-oid
+				      :foreign-key oid
+				      :retrieval :deferred
+				      :set nil))
+   (group-oid	:accessor user-group-oid
+		:type integer
+		:db-kind :base)
+   (group	:accessor user-person
+		:db-kind :join
+		:db-info (:join-class group
+				      :home-key group-oid
+				      :foreign-key oid
+				      :retrieval :deferred
+				      :set nil))))
 
 (define-persistent-class theme ()
   ;; css list
@@ -699,6 +709,42 @@
    (css-files)
    (footer.html)
    (default.html)))
+
+;;
+;;
+;;
+(define-persistent-class group ()
+  ((name	:accessor group-name
+		:initarg :name
+		:type text
+		:db-kind :base
+		:db-constraints (:not-null))
+   (description	:accessor group-description
+		:initarg :description
+		:type text
+		:db-kind :base)
+   ;; :date or :interval
+   (expiration-method :accessor group-expiration-method
+		      :initarg :expiration-method
+		      :initform :none
+		      :type keyword
+		      :db-kind :base)
+   (expiration-date :accessor group-expiration-date
+		    :initarg :expiration-date
+		    :type integer
+		    :db-kind :base)
+   ;; :exclude-user-from-group :deactivate-user :both
+   (expiration-action :accessor group-expiration-action
+		      :initarg :expiration-action
+		      :type keyword
+		      :db-kind :base)
+   (users	:accessor group-users
+		:db-kind :join
+		:db-info (:join-class user
+			  :home-key person-oid
+			  :foreign-key oid
+			  :retrieval :deferred
+			  :set t))))
 
 #|
 (init-public-sql)

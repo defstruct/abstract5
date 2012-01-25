@@ -30,7 +30,7 @@ CREATE TABLE block (
     parent_oid integer REFERENCES page_entry(oid)
 );
 
-CREATE TABLE users (
+CREATE TABLE user (
     oid integer		NOT NULL UNIQUE REFERENCES public.pobj(oid),
     name		text NOT NULL,
     email		text NOT NULL,
@@ -43,7 +43,9 @@ CREATE TABLE users (
     last_online		integer NOT NULL,
     last_login		integer NOT NULL,
     prev_login		integer NOT NULL,
-    num_logins		integer NOT NULL
+    num_logins		integer NOT NULL,
+    person_oid		integer,
+    group_oid		integer NOT NULL
 );
 
 CREATE TABLE address (
@@ -78,4 +80,13 @@ CREATE TABLE admin (
     oid integer NOT NULL UNIQUE REFERENCES public.pobj(oid),
     name text NOT NULL,
     site_oid integer
+);
+
+CREATE TABLE group (
+    oid integer		NOT NULL UNIQUE REFERENCES public.pobj(oid),
+    name		text NOT NULL,
+    description		text,
+    expiration_method	text,
+    expiration_date	integer,
+    expiration_action	text
 );
