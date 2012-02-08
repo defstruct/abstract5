@@ -46,9 +46,87 @@
     (subseq host-name 0 (or (position #\. host-name)
 			    (position #\: host-name)))))
 
+#.(locally-enable-sql-reader-syntax)
+
+(defun installation-page ()
+  (with-http-parameters ((email "email") (password1 "password1") (password2 "password2"))
+    (let ((install.html (make-pathname :directory (cdr (assoc :html *abstract5-home-folders*))
+				       :name "install.html"))
+	  (messages ()))
+      (with-output-to-string (html-out)
+	(cond ((or email password1 password2)
+	       (unless (valid-email-p email)
+		 (push "Invalid Email address!" messages))
+	       (unless (>= (length password1) 8)
+		 (push "Password must be more than 8 characters!" messages))
+	       (cond (messages
+		      `(:message ,(format nil "~{~A~&~}" (nreverse messages))))
+		     ((string= password1 password2)
+		      (insert-records :into [admin]
+				      :attributes '(password password_salt email)
+				      :values (let ((salt (make-random-salt)))
+						(list (encode-password password1 salt) salt email)))
+		      (html-template:fill-and-print-template install.html
+							     '(:message "Added system admin account.")
+							     :stream html-out)
+		      (hunchentoot:redirect "/admin.html"))
+		     (t (html-template:fill-and-print-template install.html '(:message "Password does not match!")
+							       :stream html-out))))
+	      (t (html-template:fill-and-print-template install.html ()
+							:stream html-out)))))))
+
+(defun admin.html ()
+  (with-http-parameters ((email "email") (password0 "password0") (password0 "password0"))
+    ))
+
+(defun admin-sites.html ()
+  )
+
+(defvar *script-name->env-fn-mapping*
+  '(("/admin.html" . admin.html)
+    ("/admin-sites.html" . admin-sites.html)))
+
+(defun admin-page ()
+  (let ((entry (assoc (hunchentoot:script-name*) *script-name->env-fn-mapping* :test #'string=)))
+    (with-output-to-string (html-out)
+      (if entry
+	  (html-template:fill-and-print-template (make-pathname :directory (cdr (assoc :html *abstract5-home-folders*))
+								:name (car entry))
+						 (funcall (cdr entry))
+						 :stream html-out)
+	  (html-template:fill-and-print-template (make-pathname :directory (cdr (assoc :html *abstract5-home-folders*))
+								:name "page-not-found"
+								:type "html")
+						 `(:uri ,(HUNCHENTOOT:REQUEST-URI*))
+						 :stream html-out)))))
+
+(defun process-admin-request ()
+  (if (select [*] :from [admin] :flatp t)
+      (admin-page)
+      (installation-page)))
+
+(defun system-admin-request-p ()
+  (let* ((domain (hunchentoot:host))
+	 (colon-pos (position #\: domain)))
+    (some #'(lambda (local)
+	      (string= (subseq domain 0 (or colon-pos (length local))) local))
+	  '("127.0.0.1" "localhost"))))
+
+(defmacro with-site-context ((var domain) &body body)
+  `(let ((*package* (find-package :abstract5)))
+     (bind-if (*selected-site* (find-site-from-subdomain-name ,domain))
+	      (let ((,var *selected-site*))
+		(on-schema ((site-db-schema *selected-site*))
+		  ,@body))
+	      (if (system-admin-request-p)
+		  (process-admin-request)
+		  (error 'site-not-found :domain ,domain)))))
+
+
 (defun http-request-handler (request)
   #+XXX
-  (print `(remote-addr ,(hunchentoot:remote-addr request)
+  (print `(host ,(hunchentoot:host)
+	   remote-addr ,(hunchentoot:remote-addr request)
 		       remote-port ,(hunchentoot:remote-port request)
 		       request-method ,(hunchentoot:request-method request)
 		       request-uri ,(hunchentoot:request-uri request)
@@ -61,6 +139,28 @@
     (with-site-context (site (request->subdomain request))
       (http-read-eval-print-loop))))
 
+#+XXX
+(defun create-system-admin ()
+  (loop with password
+     do
+       (princ "Please enter password for the admin: " *query-io*)
+       (setf password (read-line *query-io*))
+       (terpri *query-io*)
+       (princ "Please enter password, again: " *query-io*)
+     if (string= password (read-line *query-io*))
+     do (print password)
+       (insert-records :into [admin]
+		       :attributes '(password password_salt)
+		       :values (let ((salt (make-random-salt)))
+				 (list (encode-password password salt) salt)))
+       (return)
+     else
+     do
+       (terpri *query-io*)
+       (princ "Password mismatched! Please try again! " *query-io*)
+       (loop repeat 4
+	  do (terpri *query-io*))))
+
 (defun main ()
   ;; check config file. Load it or start installation web page
   ;; DB(?) when?
@@ -71,9 +171,15 @@
   ;; FIXME: read from config file
   (clsql-sys:connect '(#P"/var/run/postgresql/.s.PGSQL.5432" "abstract5" "jc" nil 5432) :encoding :utf-8)
   (clsql-postgresql-socket::with-connection-from-pool
+    #+XXX
+    (unless (select [*] :from [admin] :flatp t)
+      (create-system-admin)
+      (ccl:quit))
     (init-public-sql))
   (setf hunchentoot:*hunchentoot-default-external-format* hunchentoot::+utf-8+)
   (hunchentoot:start (make-instance 'hunchentoot:acceptor :port 8080)))
+
+#.(locally-disable-sql-reader-syntax)
 
 ;;;
 ;;; Replace Hunchentoot's dispatcher function

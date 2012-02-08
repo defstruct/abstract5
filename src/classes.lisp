@@ -76,6 +76,7 @@
 ;;
 ;; ADMIN
 ;;
+#+DO-NOT-NEED
 (define-persistent-class admin ()
   ((name :accessor admin-name :initarg :name :type text :db-kind :base
 	 :db-constraints (:not-null))
@@ -125,6 +126,7 @@
 				     :foreign-key site-oid
 				     :retrieval :deferred
 				     :set t))
+   #+XXX
    (admins	:accessor site-admins
 		:db-kind :join
 		:db-info (:join-class admin
@@ -134,7 +136,14 @@
 				      :set t))
    (record-caches :reader site-record-caches
 		  :initform (make-hash-table :test #'equal :weak :value)
-		  :db-kind :virtual)))
+		  :db-kind :virtual)
+   (theme :accessor site-theme
+	  :db-kind :join
+	  :db-info (:join-class theme
+				:home-key oid
+				:foreign-key site-oid
+				:retrieval :deferred
+				:set nil))))
 
 (defmethod site-name ((site site))
   (organisation-name (site-organisation site)))
@@ -189,7 +198,8 @@
 
 (defun find-site-from-subdomain-name (name)
   (using-public-db-cache
-    (find-persistent-object (site-oid (first (select 'subdomain :where [= [name] name] :flatp t))))))
+    (bind-when (site (first (select 'subdomain :where [= [name] name] :flatp t)))
+      (find-persistent-object (site-oid site)))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;
@@ -527,89 +537,6 @@
 		:type text
 		:db-kind :base
 		:db-constraints (:not-null))
-   (salt :accessor user-salt		;; this will be used encrypt all the user info
-		  :initarg :password-salt
-		  :type text
-		  :db-kind :base
-		  :db-constraints (:not-null))
-   ;; not sure but possible list is:
-   (active-p	:accessor user-active-p
-		;; Use DB default instead of :initform nil
-		:type boolean
-		:db-kind :base
-		:db-constraints (:not-null))
-   (validated-p	:accessor user-validated-p
-		;; Use DB default instead of :initform nil
-		:type boolean
-		:db-kind :base
-		:db-constraints (:not-null))
-   #+FIXME
-   (full-record-p :accessor user-full-record-p
-		:initform nil
-		:type boolean
-		:db-kind :base
-		:db-constraints (:not-null))
-   (join-date	:accessor user-join-date
-		:initform (get-universal-time)
-		:type integer
-		:db-kind :base
-		:db-constraints (:not-null))
-   (avatar-p	:accessor user-avatar-p
-		;; Use DB default instead of :initform nil
-		:type boolean
-		:db-kind :base
-		:db-constraints (:not-null))
-   (last-online	:accessor user-last-online
-		:type integer
-		:db-kind :base)
-   (last-login	:accessor user-last-login
-		:type integer
-		:db-kind :base)
-   (prev-login	:accessor user-prev-login
-		:type integer
-		:db-kind :base)
-   (num-logins   :accessor user-num-logins
-		 :type integer
-		 :db-kind :base)
-   #+FIXME
-   (timezone	:accessor user-timezone
-		:type text
-		:db-kind :base)
-   #+FIXME
-   (language :accessor user-language
-	     :type text
-	     :db-kind :base)
-   (person-oid	:accessor user-person-oid
-		:type integer
-		:db-kind :base)
-   (person	:accessor user-person
-		:db-kind :join
-		:db-info (:join-class person
-			  :home-key person-oid
-			  :foreign-key oid
-			  :retrieval :deferred
-			  :set nil))))
-
-(define-persistent-class user ()
-  ((name	:accessor user-name
-		:initarg :name
-		:type text
-		:db-kind :base
-		:db-constraints (:not-null))
-   (truename	:accessor user-true-name
-		:initarg :true-name
-		:type text
-		:db-kind :base)
-   (email	:accessor user-email
-		:initarg :email
-		:type text
-		:db-kind :base
-		:db-constraints (:not-null))
-   (password	:accessor user-password
-		:initarg :password
-		:type text
-		:db-kind :base
-		:db-constraints (:not-null))
    (salt :accessor user-salt ;; this will be used encrypt all the user info
 	 :initarg :password-salt
 	 :type text
@@ -683,17 +610,30 @@
 				      :retrieval :deferred
 				      :set nil))))
 
+(defmethod valid-user-password-p ((user user) password)
+  (string= (encode-password password (user-salt user))
+           (user-password user)))
+
 (define-persistent-class theme ()
-  ;; css list
   ((folder	:accessor theme-folder
 		:initarg :folder
 		:type text
 		:db-kind :base
 		:db-constraints (:not-null))
-   (thumnail	:accessor theme-thumnail
-		:initarg :thumnail
-		:initform "thumnail.png"
-		:type text
+   (site-oid	:initarg :site-oid
+		:type integer
+		:db-kind :base
+		:db-constraints (:not-null))
+   (site	:accessor theme-site
+		:db-kind :join
+		:db-info (:join-class theme
+				      :home-key site-oid
+				      :foreign-key oid
+				      :retrieval :deferred
+				      :set nil))
+   (key		:accessor theme-key
+		:initarg :key
+		:type keyword
 		:db-kind :base
 		:db-constraints (:not-null))
    (name	:accessor theme-name
@@ -704,12 +644,15 @@
    (description	:accessor theme-description
 		:initarg :description
 		:type text
-		:db-kind :base)
-   (header.html)
-   (css-files)
-   (footer.html)
-   (default.html)))
+		:db-kind :base)))
 
+(defmacro define-theme (site key-name &key name description)
+  `(make-db-instance 'theme
+		     :key ,key-name
+		     :folder ,(directory-namestring *load-pathname*)
+		     :name ,name
+		     :description ,description
+		     :site ,site))
 ;;
 ;;
 ;;

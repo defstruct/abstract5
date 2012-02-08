@@ -139,4 +139,30 @@
 			 (nreverse pos-list)
 			 pos-list))))
 
+(defun md5-encode-string (string)
+  (cl-base64:usb8-array-to-base64-string (md5::md5sum-sequence string)))
+
+(defun make-random-salt ()
+  ;; to make constant length string, use md5-encode-string
+  (md5-encode-string
+   (with-output-to-string (out)
+     (cl-base64:integer-to-base64-stream (random most-positive-fixnum) out))))
+
+(defun encode-password (password salt)
+  (md5-encode-string (with-output-to-string (out)
+		       (princ password out)
+		       (princ salt out))))
+
+(defconstant +email-regex+ (cl-ppcre:create-scanner "\\b[A-Z0-9._%-]+@[A-Z0-9.-]+\\.[A-Z]{2,4}\\b" :case-insensitive-mode t))
+(defun valid-email-p (email)
+  (when (cl-ppcre:scan +email-regex+ email)
+    t))
+
+(defmacro with-http-parameters ((&rest bindings) &body body)
+  `(let (,@(mapcar #'(lambda (var-val)
+		      `(,(first var-val) (hunchentoot:parameter ,(second var-val))))
+		  bindings))
+     ,@body))
+
+
 ;;; UTILS.LISP ends here

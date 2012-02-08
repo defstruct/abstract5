@@ -72,3 +72,9 @@ CREATE TABLE subdomain (
     name text NOT NULL UNIQUE,
     site_oid integer NOT NULL REFERENCES site(oid)
 );
+
+CREATE TABLE admin (
+    password		text NOT NULL,
+    password_salt	text NOT NULL,
+    email		text NOT NULL
+);

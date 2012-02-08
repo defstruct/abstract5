@@ -1,149 +1,126 @@
-http://www.concrete5.org/documentation/general-topics/attributes/
+After having more knowledge, new design emerged.
 
-* Admins
-  - Root admin can do editing configuration file.
-    E.g. DB configuration and multi-site configuration
-    The information stored in root.conf
-    The file is only editable on localhost with a editor
+* Theme Directory and files
 
-  - Site admin is any site related configuration
-    The information sotred in DB.
-    Edit via web interface
+  - directory convention for a theme: themes/<theme-name>/
 
-* URI
-  - For single pages, /single-page/operation?arg1=v1&arg2=v2, etc
-  - For DB stored pages,
-        /db/stored/long/page/operation?arg1=v1&arg2=v2
-	or
-	/db/stored/long/page/item?arg1=v1&arg2=v2
+  - page-types in theme
+  Ex) page-types/blog-entry.html
+		/full.html
+		/left-sidebar.html
+		/right-sidebar.html
+		/single-page.html
 
-* Multi-site
-  - The standard instances storage is abstract5/site-instances/
-  - The root site abstract5/site-instances/root is common shared resource for all other sites
-  - Each site has different DB schema (PostgreSQL)
+ - Page types are HTML templates providing areas and stored in file system
 
-* Exec order
-  - Get view, model, controller
-  - View has theme, page
-  - Get 'theme' for the requested page
-  - Get 'page-type' for the requested page
-  - If page-type found, use it. Otherwise use 'default' definition
-  - For single-page, use single-page.html(view.php)
+* abstract5 instruction -> TMPL instruction
+  - user level
+      <html <!-- abstract5 (!site!html-lang! or !page!html-lang!) -->xmlns="http://www.w3.org/1999/xhtml">
+      => internally interpreted as SITE object call HTML-LANG method. When HTML-LANG writer gets called, clear cache
 
-* A page = collection of blocks, ..., etc
 
-* Area = block container
+* Use of HTML-TEMPLATE
 
-* Plugin
-  - Status - unloaded, activated, inactive
-  - Operations - Load, activate, deactivate
+  - predefined vars
 
-* MVC (http://andrewembler.com/posts/basic-mvc-in-concrete5/)
-
-  - View
-    <form method="post" action="<!-- TMPL_VAR search-user -->">
-        <input type="text" name="uName" value="" />
-    	<input type="submit" value="Search" />
-    </form>
-
-  - Controller - return environment to view
-    (:search-user (make-action-uri :action :search-user))
-
-    (:second-search-user (make-action-uri :uri "/path/to/second/single/page" :action :second-search-user))
-
-  - URI and controller mapping
-       http://www.yoursite.com/index.php/calculator/
-      (define-single-page calculator ("calculator")
-	:actions ((multiply ((a number) (b number))
-			(* a b))
-		     ... more actions ...
-		     ))
-
-      (:calc-mult-5-10 (make-action-uri calculator multiply 5 10))
-
-  - View
-    <a href="<!-- TMPL_VAR calc-mult-5-10 -->">Multiply Here!</a>
-
-  - Controller and View
-    :actions ((search-user ((user-name string))
-    	         (:user-name-posted user-name)))
-
-    <!-- TMPL_VAR user-name-posted -->
-
-* Ex - http://andrewembler.com/posts/custom-concrete5-user-reports/
-;; NB: user-visited-page-list and :site are a key to map request to MVC component
-;; Internal key is - :!TEST!-USER-VISITED-PAGE-LIST
-(define-mvc user-visited-page-list (:site test) ;; without :site, it is visible to all sites
-  :model ((:inherit (user-list))
-	  (:slots   (filters))
-	  (:methods ((get-page ((user-visited-page-list user-visited-page-list) filters)
-			       "return user objects"))))
-  :view ((:uri  "/user-visited-page-list") ;; will map test.domain/user-visited-page-list
-	 ;; map site-instances/test/components/user-visited-page-list.html
-	 ;; or  site-instances/root/components/user-visited-page-list.html (when no :site)
-	 (:html "component/user-visited-page-list.html")
-	 )
-  :controller ((:methods ((search-users ((controller user-visited-page-list) :page-id :dt-from :dt-to :num-results)
-			    ;; send this to view
-			    (:user-email-class ""
-			     :user-email-href ""
-			     :first-name-class ""
-			     :first-name-href ""
-			     :second-name-class ""
-			     :second-name-href ""
-			     ...
-			     :loop-result
-			     ((:user-id ""
-			       :user-id-href ""
-			       :first-name ""
-			       :last-name ""
-			       ...)
-			      (:user-id ""
-			       :user-id-href ""
-			       :first-name ""
-			       :last-name ""
-			       ...)
-			      ...)))))))
+    *html-lang* - site wide HTML language setup for "<html lang="
+    *charset* - site wide HTML charset for "<meta ... content='text/html; charset="
+    *page-title* - page title from abstract5 system
+    *meta-description*, *meta-keywords*, *meta-content-lang* - from the system for SEO
+    *css-files*, *css-file*, *js-files*, *js-file* - from the system for system CSS and JS
+    *inline-style-list*, *inline-style*, *inline-js-list*, *inline-js* - from the system for inlined CSS and JS
+    *edit-mode-p* - true, when the page is under editing
 
 
 
 
 
-    (define-plugin :hello-dolly
-    		   :name "Hello Dolly"
-		   :uri "http://wordpress.org/extend/plugins/hello-dolly/"
-		   :description "This is not just a plugin, it symbolizes the hope and enthusiasm of an entire generation summed up in two words sung most famously by Louis Armstrong: Hello, Dolly. When activated you will randomly see a lyric from <cite>Hello, Dolly</cite> in the upper right of your admin screen on every page."
-		   :author "J. C."
-    		   :author-uri ""
-    		   :version "1.0"
-    		   :hook dolly-css)
+  The areas are defined in HTML files, using tag like:
+  Ex) 		<div id="main-content-inner">
+		   <!-- abstract5!area!main -->
+		</div>
 
-* Example HTML structure
-    <!-- TMPL_LOOP theme-css-files -->
-    <link rel='stylesheet' media='screen' type='text/css' href='<!-- TMPL_VAR css-file -->' />
-    <!-- /TMPL_LOOP -->
-    <!-- TMPL_LOOP theme-js-files -->
-    <script type='text/javascript' src='<!-- TMPL_VAR js-file -->'></script>
-    <!-- /TMPL_LOOP -->
 
-    <!-- TMPL_CALL html-header -->
+  Page inclusion
+  Ex) <!-- abstract5!area!area-name -->
 
-    <!-- FIXME: html-header may have -
-	 <meta http-equiv="content-type" content="text/html; charset=<?php  echo APP_CHARSET?>" />
-	 meta title
-	 meta description
-	 meta keywords
-	 meta robots
-	 meta generator
+*
 
-	 title
 
-	 inline js
+-----------------
+1. site object changed
+2. page object changed
+3. area object changed
+4. user template file changed
 
-	 FAVICON:
-	 link rel='shorcut icon'
-	 link rel='icon'
-
-	 more javascripts - check concrete5 pages (see header_required.php)
-
-	 -->
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html <!-- TMPL_IF !page/site!html-lang! -->lang="<!-- TMPL_VAR !site/page!html-lang! -->" <!-- /TMPL_IF -->xmlns="http://www.w3.org/1999/xhtml">
+  <head>
+    <title><!-- TMPL_VAR !page!title! --></title>
+    <!-- TMPL_IF !page/site!meta-description! --><meta name="description" content="<!-- TMPL_VAR !page/site!meta-description! -->" /><!-- /TMPL_IF -->
+    <!-- TMPL_IF !page/site!meta-keywords! --><meta name="keywords" content="<!-- TMPL_VAR !page/site!meta-keywords! -->" /><!-- /TMPL_IF -->
+    <!-- TMPL_VAR !site!css-file-links! -->
+    <!-- TMPL_VAR !page!css-file-links! -->
+    <!-- TMPL_VAR !site!inline-styles! -->
+    <!-- TMPL_VAR !page!inline-styles! -->
+    <!-- TMPL_VAR !site!js-file-scripts! -->
+    <!-- TMPL_VAR !page!js-file-scripts! -->
+    <!-- TMPL_VAR !site!inline-js! -->
+    <!-- TMPL_VAR !page!inline-js! -->
+    <link rel="stylesheet" href="/css/reset.css" />
+    <link rel="stylesheet" href="/css/text.css" />
+    <link rel="stylesheet" href="/css/960_24_col.css" />
+    <link rel="stylesheet" media="screen" type="text/css" href="/css/main.css" />
+    <link rel="stylesheet" media="screen" type="text/css" href="/css/typography.css" />
+    <link href='http://fonts.googleapis.com/css?family=Merriweather:400,700,900,300' rel='stylesheet' type='text/css' />
+  </head>
+  <body>
+    <div id="main-container" class="container_24">
+      <div id="header">
+	<!-- TMPL_VAR !site-areas[site-name]! -->
+	<!-- TMPL_VAR !site-areas[site-header-nav]! -->
+	<div id="header-image">
+	  <!-- TMPL_VAR !page-areas[header-image]! -->
+	</div>
+      </div>
+      <div class="clear"></div>
+      <!-- FIXME: do cache&optimisation later -->
+      <!-- TMPL_IF !page!right-sidebar! -->
+      <!-- TMPL_INCLUDE "page-types/right-sidebar.html" -->
+      <!-- /TMPL_IF -->
+      <!-- TMPL_IF !page!left-sidebar! -->
+      <!-- TMPL_INCLUDE "page-types/left-sidebar.html" -->
+      <!-- /TMPL_IF -->
+      <!-- TMPL_IF !page!full! -->
+      <!-- TMPL_INCLUDE "page-types/full.html" -->
+      <!-- /TMPL_IF -->
+      <!-- TMPL_IF !page!blog-entry! -->
+      <!-- TMPL_INCLUDE "page-types/blog-entry.html" -->
+      <!-- /TMPL_IF -->
+      <!-- TMPL_IF !page!single-page! -->
+      <!-- TMPL_INCLUDE "page-types/single-page.html" -->
+      <!-- /TMPL_IF -->
+      <div class="clear"></div>
+      <div id="footer">
+	<div id="footer-inner">
+	  <p class="footer-sign-in">
+	    <span class="sign-in"><!-- TMPL_IF !user!registered-user-p! -->
+	      <!-- TMPL_VAR !caption!currently-logged-in-as! --> <b><!-- TMPL_IF !user!user-profiles-enabled-p! -->
+		<a href="/profile"><!-- TMPL_VAR !user!name! --></a>
+		<!-- TMPL_ELSE -->
+		<!-- TMPL_VAR !user!name! -->
+		<!-- /TMPL_IF -->
+		</b>
+	      <!-- TMPL_ELSE -->
+	      <a href="/login"><!-- TMPL_VAR !caption!sign-in-to-edit-this-site! --></a>
+	    </span>
+	  </p>
+	  <div class="clear"></div>
+	  <p class="footer-copyright">&copy;<!-- !call!current-year --> <!-- !site!name! -->.</p>
+	  <p class="footer-tag-line"><!-- !caption!built-with! --> <a href="http://www.abstract5.org/" alt="Free Content Management System" target="_blank">abstract5</a> - an open source CMS</p>
+	</div>
+      </div>
+    </div>
+    <!-- TMPL_VAR !page/site!extra-footer! -->
+  </body>
+</html>

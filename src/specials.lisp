@@ -101,14 +101,6 @@
 ;;; Dynamic variables for site namespace
 (defvar *selected-site*)
 
-(defmacro with-site-context ((var domain) &body body)
-  `(let ((*package* (find-package :abstract5)))
-     (bind-if (*selected-site* (find-site-from-subdomain-name ,domain))
-	      (let ((,var *selected-site*))
-		(on-schema ((site-db-schema *selected-site*))
-		  ,@body))
-	      (error 'site-not-found :domain ,domain))))
-
 (defmacro using-public-db-cache (&body body)
   ;; This only works with cached object.
   ;; Because of ON-SCHEMA, non-chached object query will fail.
